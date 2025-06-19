@@ -1,0 +1,15 @@
+{
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "node-html-parser": "^7.0.1",
+    "typecatch": "^0.2.5"
+  }
+}
