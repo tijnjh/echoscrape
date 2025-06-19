@@ -14,7 +14,7 @@ serve({
       await scraper.init(path);
 
       try {
-        return Response.json({
+        const res = Response.json({
           title: scraper.$("title")?.textContent,
           description: scraper.getMeta("description"),
           themeColor: scraper.getMeta("theme-color"),
@@ -37,6 +37,9 @@ serve({
             card: scraper.getTwitter("card"),
           },
         });
+        res.headers.set("Access-Control-Allow-Origin", "*");
+        res.headers.set("Access-Control-Allow-Methods", "GET");
+        return res;
       } catch (error) {
         return Response.json({
           error: error instanceof Error ? error.message : String(error),
