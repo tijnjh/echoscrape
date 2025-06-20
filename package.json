@@ -1,17 +1,18 @@
 {
-  "module": "src/index.tsx",
-  "type": "module",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "module": "src/index.tsx",
   "dependencies": {
     "is-localhost-ip": "^2.0.0",
     "mono-jsx": "^0.6.7",
     "node-html-parser": "^7.0.1",
     "typecatch": "^0.2.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   }
 }
