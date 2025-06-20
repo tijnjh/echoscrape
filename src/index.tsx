@@ -1,4 +1,4 @@
-import { serve, type BunRequest } from "bun";
+import { type BunRequest, serve } from "bun";
 import { tryCatch } from "typecatch";
 import { Scraper } from "./scraper";
 
@@ -51,7 +51,12 @@ serve({
         });
       }
     },
-    "/": () => new Response("hi"),
-    "/favicon.ico": new Response("hi"),
+    "/": (req) => (
+      <html>
+        <h1>metascraper</h1>
+        go to<br />
+        <code style={{ backgroundColor: "#f5f5f5" }}>{req.url}{`{url}`}</code>
+      </html>
+    ),
   },
 });

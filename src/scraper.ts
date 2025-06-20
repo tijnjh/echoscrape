@@ -41,7 +41,7 @@ export class Scraper {
       throw new Error("Access to localhost not allowed");
     }
 
-    return data.toString();
+    return data;
   }
 
   $(selector: string) {
