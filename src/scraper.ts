@@ -1,13 +1,19 @@
 import checkIfLocalhost from "is-localhost-ip";
 import parse, { HTMLElement } from "node-html-parser";
 import { tryCatch } from "typecatch";
+import { tryCache } from "./cache";
 
 export class Scraper {
   root?: HTMLElement;
 
   async init(url: string) {
     const validUrl = await this.#validateUrl(url);
-    const fetched = await tryCatch(fetch(validUrl).then((res) => res.text()));
+    const fetched = await tryCatch(
+      tryCache(
+        validUrl.toString(),
+        async () => await fetch(validUrl).then((res) => res.text())
+      )
+    );
 
     if (fetched.error) {
       throw new Error(
