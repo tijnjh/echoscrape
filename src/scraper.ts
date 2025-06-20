@@ -1,3 +1,4 @@
+import checkIfLocalhost from "is-localhost-ip";
 import parse, { HTMLElement } from "node-html-parser";
 import { tryCatch } from "typecatch";
 
@@ -5,7 +6,7 @@ export class Scraper {
   root?: HTMLElement;
 
   async init(url: string) {
-    const validUrl = this.#validateUrl(url);
+    const validUrl = await this.#validateUrl(url);
     const fetched = await tryCatch(fetch(validUrl).then((res) => res.text()));
 
     if (fetched.error) {
@@ -27,11 +28,17 @@ export class Scraper {
     this.root = parsed.data;
   }
 
-  #validateUrl(url: string) {
+  async #validateUrl(url: string) {
     const { data, error } = tryCatch(() => new URL(url));
 
     if (error) {
       throw new Error(`Invalid URL: ${error.message}`);
+    }
+
+    const isLocalHost = await checkIfLocalhost(data.hostname);
+
+    if (isLocalHost) {
+      throw new Error("Access to localhost not allowed");
     }
 
     return data.toString();

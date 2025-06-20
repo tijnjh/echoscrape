@@ -9,6 +9,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "is-localhost-ip": "^2.0.0",
     "node-html-parser": "^7.0.1",
     "typecatch": "^0.2.5"
   }

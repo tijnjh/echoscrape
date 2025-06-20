@@ -1,4 +1,5 @@
 import { serve, type BunRequest } from "bun";
+import { tryCatch } from "typecatch";
 import { Scraper } from "./scraper";
 
 serve({
@@ -11,7 +12,11 @@ serve({
       }
 
       const scraper = new Scraper();
-      await scraper.init(path);
+      const { error } = await tryCatch(scraper.init(path));
+
+      if (error) {
+        return Response.json({ error: error.message }, { status: 400 });
+      }
 
       try {
         const res = Response.json({
@@ -46,5 +51,7 @@ serve({
         });
       }
     },
+    "/": () => new Response("hi"),
+    "/favicon.ico": new Response("hi"),
   },
 });
