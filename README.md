@@ -4,4 +4,5 @@ tool to scrape metadata from any page
 
 for example, heres the metadata from react.dev:
 
-<img width="1028" alt="afbeelding" src="https://github.com/user-attachments/assets/070505bc-b9a9-42df-88cb-303b642aae3c" />
+<img width="572" src="https://github.com/user-attachments/assets/25a8fa08-dc71-4bc3-8d2e-c12d9d84c673" />
+
