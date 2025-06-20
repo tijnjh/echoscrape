@@ -50,6 +50,6 @@ export class Scraper {
   }
 
   getTwitter(name: string) {
-    return this.getMeta(name);
+    return this.getMeta(`twitter:${name}`);
   }
 }
