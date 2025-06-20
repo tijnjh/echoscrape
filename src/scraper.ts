@@ -50,8 +50,8 @@ export class Scraper {
     return data;
   }
 
-  $(selector: string) {
-    return this.root?.querySelector(selector);
+  $<T = HTMLElement>(selector: string) {
+    return (this.root?.querySelector(selector) as T) ?? null;
   }
 
   getMeta(name: string) {

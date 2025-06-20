@@ -18,6 +18,16 @@ serve({
         return Response.json({ error: error.message }, { status: 400 });
       }
 
+      let oembed = {};
+
+      const oembedUrl = scraper.$<HTMLLinkElement>(
+        'link[rel="alternate"][type="application/json+oembed"]',
+      )?.getAttribute("href");
+
+      if (oembedUrl) {
+        oembed = await fetch(oembedUrl).then((res) => res.json());
+      }
+
       try {
         const res = Response.json({
           title: scraper.$("title")?.textContent,
@@ -41,6 +51,7 @@ serve({
             site: scraper.getTwitter("site"),
             card: scraper.getTwitter("card"),
           },
+          oembed,
         });
         res.headers.set("Access-Control-Allow-Origin", "*");
         res.headers.set("Access-Control-Allow-Methods", "GET");
@@ -53,7 +64,7 @@ serve({
     },
     "/": (req) => (
       <html>
-        <h1>metascraper</h1>
+        <h1>echoscrape</h1>
         go to<br />
         <code style={{ backgroundColor: "#f5f5f5" }}>{req.url}{`{url}`}</code>
       </html>
