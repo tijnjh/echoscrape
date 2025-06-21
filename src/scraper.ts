@@ -4,20 +4,21 @@ import { tryCatch } from "typecatch";
 import { tryCache } from "./cache";
 
 export class Scraper {
-  root?: HTMLElement;
+  #url?: URL;
+  #root?: HTMLElement;
 
   async init(url: string) {
-    const validUrl = await this.#validateUrl(url);
+    this.#url = await this.#validateUrl(url);
     const fetched = await tryCatch(
       tryCache(
-        validUrl.toString(),
-        async () => await fetch(validUrl).then((res) => res.text())
-      )
+        this.#url.toString(),
+        async () => await fetch(this.#url!).then((res) => res.text()),
+      ),
     );
 
     if (fetched.error) {
       throw new Error(
-        `Failed to fetch URL: ${validUrl}, with error ${fetched.error.message}`
+        `Failed to fetch URL: ${this.#url}, with error ${fetched.error.message}`,
       );
     }
 
@@ -31,7 +32,7 @@ export class Scraper {
       throw new Error(`Failed to parse: ${parsed.error.message}`);
     }
 
-    this.root = parsed.data;
+    this.#root = parsed.data;
   }
 
   async #validateUrl(url: string) {
@@ -51,7 +52,7 @@ export class Scraper {
   }
 
   $<T = HTMLElement>(selector: string) {
-    return (this.root?.querySelector(selector) as T) ?? null;
+    return (this.#root?.querySelector(selector) as T) ?? null;
   }
 
   getMeta(name: string) {
@@ -64,5 +65,42 @@ export class Scraper {
 
   getTwitter(name: string) {
     return this.getMeta(`twitter:${name}`);
+  }
+
+  async getOembed() {
+    let oembed = {};
+
+    const oembedUrl = this.$<HTMLLinkElement>(
+      'link[rel="alternate"][type="application/json+oembed"]',
+    )?.getAttribute("href");
+
+    if (oembedUrl) {
+      oembed = await fetch(oembedUrl).then((res) => res.json());
+    }
+
+    return oembed;
+  }
+
+  async getFavicon() {
+    let favicon = this.$('link[rel="icon"]')?.getAttribute("href") ||
+      this.$('link[rel="shortcut icon"]')?.getAttribute("href") ||
+      this.$('link[rel="apple-touch-icon"]')?.getAttribute("href");
+
+    if (favicon) {
+      favicon = new URL(favicon, this.#url?.href).href;
+      console.log("Favicon found in HTML:", favicon);
+    } else {
+      const faviconUrl = new URL("/favicon.ico", this.#url?.href).href;
+      const response = await fetch(faviconUrl);
+
+      if (response.ok) {
+        const buffer = await response.arrayBuffer();
+        console.log("Fetched /favicon.ico, size:", buffer.byteLength);
+      } else {
+        console.log("No favicon found.");
+      }
+    }
+
+    return favicon;
   }
 }

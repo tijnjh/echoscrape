@@ -18,20 +18,11 @@ serve({
         return Response.json({ error: error.message }, { status: 400 });
       }
 
-      let oembed = {};
-
-      const oembedUrl = scraper.$<HTMLLinkElement>(
-        'link[rel="alternate"][type="application/json+oembed"]',
-      )?.getAttribute("href");
-
-      if (oembedUrl) {
-        oembed = await fetch(oembedUrl).then((res) => res.json());
-      }
-
       try {
         const res = Response.json({
           title: scraper.$("title")?.textContent,
           description: scraper.getMeta("description"),
+          favicon: await scraper.getFavicon(),
           themeColor: scraper.getMeta("theme-color"),
           og: {
             title: scraper.getOg("title"),
@@ -51,7 +42,7 @@ serve({
             site: scraper.getTwitter("site"),
             card: scraper.getTwitter("card"),
           },
-          oembed,
+          oembed: await scraper.getOembed(),
         });
         res.headers.set("Access-Control-Allow-Origin", "*");
         res.headers.set("Access-Control-Allow-Methods", "GET");
