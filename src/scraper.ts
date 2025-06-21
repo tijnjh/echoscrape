@@ -91,12 +91,11 @@ export class Scraper {
       console.log("Favicon found in HTML:", favicon);
     } else {
       const faviconUrl = new URL("/favicon.ico", this.#url?.href).href;
-      const response = await fetch(faviconUrl);
+      const response = await fetch(faviconUrl, { method: "HEAD" });
 
       if (response.ok) {
         favicon = faviconUrl;
-        const buffer = await response.arrayBuffer();
-        console.log("Fetched /favicon.ico, size:", buffer.byteLength);
+        console.log("Fetched /favicon.ico");
       } else {
         console.log("No favicon found.");
       }
