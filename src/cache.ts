@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 const cache: Record<string, any> = {};
 
 export async function tryCache<T>(
@@ -5,13 +7,13 @@ export async function tryCache<T>(
   fn: () => Promise<T>,
 ): Promise<T> {
   if (typeof cache[key] === "undefined") {
-    console.log(`🤔 Cache miss for key: ${key}. Fetching data...`);
+    logger.cache("Cache miss. Fetching data...");
     const data = await fn();
     cache[key] = data;
-    console.log(`✅ Data cached for key: ${key}`);
+    logger.cache("Data cached");
     return data;
   } else {
-    console.log(`😎 Cache hit for key: ${key}. Returning cached data.`);
+    logger.cache(`Cache hit. Returning cached data.`);
     return cache[key] as T;
   }
 }

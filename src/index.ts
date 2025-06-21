@@ -1,5 +1,6 @@
 import { type BunRequest, serve } from "bun";
 import { tryCatch } from "typecatch";
+import { logger } from "./logger";
 import { Scraper } from "./scraper";
 
 serve({
@@ -11,10 +12,13 @@ serve({
         path = path.replace("/", "");
       }
 
+      logger.request(path);
+
       const scraper = new Scraper();
       const { error } = await tryCatch(scraper.init(path));
 
       if (error) {
+        logger.error(error.message);
         return Response.json({ error: error.message }, { status: 400 });
       }
 
@@ -51,8 +55,12 @@ serve({
         });
         res.headers.set("Access-Control-Allow-Origin", "*");
         res.headers.set("Access-Control-Allow-Methods", "GET");
+        logger.response("Responding with metadata");
         return res;
       } catch (error) {
+        logger.error(
+          error instanceof Error ? error.stack ?? error.message : String(error),
+        );
         return Response.json({
           error: error instanceof Error ? error.message : String(error),
         });
