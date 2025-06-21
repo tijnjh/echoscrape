@@ -94,6 +94,7 @@ export class Scraper {
       const response = await fetch(faviconUrl);
 
       if (response.ok) {
+        favicon = faviconUrl;
         const buffer = await response.arrayBuffer();
         console.log("Fetched /favicon.ico, size:", buffer.byteLength);
       } else {
