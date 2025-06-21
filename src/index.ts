@@ -18,11 +18,16 @@ serve({
         return Response.json({ error: error.message }, { status: 400 });
       }
 
+      const [favicon, oembed] = await Promise.all([
+        scraper.getFavicon(),
+        scraper.getOembed(),
+      ]);
+
       try {
         const res = Response.json({
           title: scraper.$("title")?.textContent,
           description: scraper.getMeta("description"),
-          favicon: await scraper.getFavicon(),
+          favicon,
           themeColor: scraper.getMeta("theme-color"),
           og: {
             title: scraper.getOg("title"),
@@ -42,7 +47,7 @@ serve({
             site: scraper.getTwitter("site"),
             card: scraper.getTwitter("card"),
           },
-          oembed: await scraper.getOembed(),
+          oembed,
         });
         res.headers.set("Access-Control-Allow-Origin", "*");
         res.headers.set("Access-Control-Allow-Methods", "GET");
