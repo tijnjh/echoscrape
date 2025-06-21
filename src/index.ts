@@ -55,7 +55,7 @@ serve({
     },
     "/": (req) =>
       Response.json({
-        instruction: `Go to https://${req.url}{your-url}`,
+        instruction: `Go to ${req.url}{your-url}`,
         echoscrape: {
           source: "https://github.com/tijnjh/echoscrape",
         },
