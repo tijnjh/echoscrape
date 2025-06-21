@@ -53,12 +53,12 @@ serve({
         });
       }
     },
-    "/": (req) => (
-      <html>
-        <h1>echoscrape</h1>
-        go to<br />
-        <code style={{ backgroundColor: "#f5f5f5" }}>{req.url}{`{url}`}</code>
-      </html>
-    ),
+    "/": (req) =>
+      Response.json({
+        instruction: `Go to https://${req.url}{your-url}`,
+        echoscrape: {
+          source: "https://github.com/tijnjh/echoscrape",
+        },
+      }),
   },
 });

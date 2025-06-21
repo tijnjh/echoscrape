@@ -2,10 +2,9 @@
   "private": true,
   "license": "AGPL-3.0-only",
   "type": "module",
-  "module": "src/index.tsx",
+  "module": "src/index.ts",
   "dependencies": {
     "is-localhost-ip": "^2.0.0",
-    "mono-jsx": "^0.6.7",
     "node-html-parser": "^7.0.1",
     "typecatch": "^0.2.5"
   },

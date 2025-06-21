@@ -5,7 +5,6 @@
       "name": "scrape-metadata",
       "dependencies": {
         "is-localhost-ip": "^2.0.0",
-        "mono-jsx": "^0.6.7",
         "node-html-parser": "^7.0.1",
         "typecatch": "^0.2.5",
       },
@@ -43,8 +42,6 @@
     "he": ["he@1.2.0", "", { "bin": { "he": "bin/he" } }, "sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw=="],
 
     "is-localhost-ip": ["is-localhost-ip@2.0.0", "", {}, "sha512-vlgs2cSgMOfnKU8c1ewgKPyum9rVrjjLLW2HBdL5i0iAJjOs8NY55ZBd/hqUTaYR0EO9CKZd3hVSC2HlIbygTQ=="],
-
-    "mono-jsx": ["mono-jsx@0.6.7", "", { "bin": { "mono-jsx": "bin/mono-jsx" } }, "sha512-n6wWR08FDg2p8K416WdAygx/Xi1I6ceGUIMOiz5Dm8NuKFQa81xvZv9E4gPXFZvRN3NqGztJvgzvIvaMQcr+yg=="],
 
     "node-html-parser": ["node-html-parser@7.0.1", "", { "dependencies": { "css-select": "^5.1.0", "he": "1.2.0" } }, "sha512-KGtmPY2kS0thCWGK0VuPyOS+pBKhhe8gXztzA2ilAOhbUbxa9homF1bOyKvhGzMLXUoRds9IOmr/v5lr/lqNmA=="],
 
