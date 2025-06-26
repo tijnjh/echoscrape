@@ -23,28 +23,28 @@ app.get("/*", async ({ path, status }) => {
   logger.request(path);
 
   const scraper = new Scraper();
-  const { error } = await tryCatch(scraper.init(path));
+  const scraperInit = await tryCatch(scraper.init(path));
 
-  if (error) {
-    logger.error(error.message);
+  if (scraperInit.error) {
+    logger.error(scraperInit.error.message);
     status(400);
-    return { error: error.message };
+    return { error: scraperInit.error.message };
   }
 
-  const { data: scrapedAssets, error: scrapingError } = await tryCatch(
+  const assetScrape = await tryCatch(
     Promise.all([
       scraper.getFavicon(),
       scraper.getOembed(),
     ]),
   );
 
-  if (scrapingError) {
-    logger.error(scrapingError.message);
+  if (assetScrape.error) {
+    logger.error(assetScrape.error.message);
     status(400);
-    return { error: scrapingError.message };
+    return { error: assetScrape.error.message };
   }
 
-  const [favicon, oembed] = scrapedAssets;
+  const [favicon, oembed] = assetScrape.data;
 
   try {
     const metadata = {

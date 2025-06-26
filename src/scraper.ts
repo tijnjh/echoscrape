@@ -10,45 +10,45 @@ export class Scraper {
 
   async init(url: string) {
     this.#url = await this.#validateUrl(url);
-    const fetched = await tryCatch(
+    const pageFetch = await tryCatch(
       tryCache(
         this.#url.toString(),
         async () => await fetch(this.#url!).then((res) => res.text()),
       ),
     );
 
-    if (fetched.error) {
+    if (pageFetch.error) {
       throw new Error(
-        `Failed to fetch URL: ${this.#url}, with error ${fetched.error.message}`,
+        `Failed to fetch URL: ${this.#url}, with error ${pageFetch.error.message}`,
       );
     }
 
-    if (typeof fetched.data === "undefined") {
+    if (typeof pageFetch.data === "undefined") {
       throw new Error("Data is undefined");
     }
 
-    const parsed = tryCatch(() => parse(fetched.data));
+    const pageParse = tryCatch(() => parse(pageFetch.data));
 
-    if (parsed.error) {
+    if (pageParse.error) {
       logger.error(
-        `Failed to parse HTML for ${this.#url}: ${parsed.error.message}`,
+        `Failed to parse HTML for ${this.#url}: ${pageParse.error.message}`,
       );
-      throw new Error(`Failed to parse: ${parsed.error.message}`);
+      throw new Error(`Failed to parse: ${pageParse.error.message}`);
     }
 
     logger.parse("Successfully parsed HTML");
-    this.#root = parsed.data;
+    this.#root = pageParse.data;
   }
 
   async #validateUrl(url: string) {
     logger.validate("Validating URL...");
-    const { data, error } = tryCatch(() => new URL(url));
+    const urlValidate = tryCatch(() => new URL(url));
 
-    if (error) {
-      throw new Error(`Invalid URL: ${error.message}`);
+    if (urlValidate.error) {
+      throw new Error(`Invalid URL: ${urlValidate.error.message}`);
     }
 
-    const isLocalHost = await checkIfLocalhost(data.hostname);
+    const isLocalHost = await checkIfLocalhost(urlValidate.data.hostname);
 
     if (isLocalHost) {
       logger.warn("Blocked localhost URL");
@@ -56,7 +56,7 @@ export class Scraper {
     }
 
     logger.validate("URL is valid and allowed");
-    return data;
+    return urlValidate.data;
   }
 
   $<T = HTMLElement>(selector: string) {
