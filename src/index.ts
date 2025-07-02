@@ -15,10 +15,12 @@ app.get("/", ({ request }) => ({
   },
 }));
 
-app.get("/*", async ({ path, status }) => {
+app.get("/*", async ({ path, status, request, redirect }) => {
   if (path.startsWith("/")) {
     path = path.replace("/", "");
   }
+
+  const faviconOnly = new URL(request.url).searchParams.has("favicon");
 
   logger.request(path);
 
@@ -74,6 +76,10 @@ app.get("/*", async ({ path, status }) => {
     };
 
     logger.response("Responding with metadata");
+
+    if (faviconOnly && favicon) {
+      return redirect(favicon);
+    }
 
     return metadata;
   } catch (error) {
