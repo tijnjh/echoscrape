@@ -1,8 +1,8 @@
 import cors from "@elysiajs/cors";
 import { Elysia } from "elysia";
-import { tryCatch } from "typecatch";
 import { logger } from "./logger";
 import { Scraper } from "./scraper";
+import { tryCatch } from "typecatch-neverthrow";
 
 const app = new Elysia();
 
@@ -25,71 +25,58 @@ app.get("/*", async ({ path, status, request, redirect }) => {
   logger.request(path);
 
   const scraper = new Scraper();
-  const scraperInit = await tryCatch(scraper.init(path));
+  const scraperInit = await scraper.init(path);
 
-  if (scraperInit.error) {
-    logger.error(scraperInit.error.message);
+  if (scraperInit.isErr()) {
+    logger.error(scraperInit.error);
     status(400);
-    return { error: scraperInit.error.message };
+    return { error: scraperInit.error };
   }
 
-  const assetScrape = await tryCatch(
-    Promise.all([
-      scraper.getFavicon(),
-      !faviconOnly ? scraper.getOembed() : null,
-    ]),
-  );
-
-  if (assetScrape.error) {
-    logger.error(assetScrape.error.message);
-    status(400);
-    return { error: assetScrape.error.message };
-  }
-
-  const [favicon, oembed] = assetScrape.data;
+  const [favicon, oembed] = await Promise.all([
+    scraper.getFavicon(),
+    !faviconOnly ? scraper.getOembed() : null,
+  ]);
 
   if (faviconOnly && favicon) {
     return redirect(favicon);
   }
 
-  try {
-    const metadata = {
-      title: scraper.$("title")?.textContent,
-      description: scraper.getMeta("description"),
-      favicon,
-      themeColor: scraper.getMeta("theme-color"),
-      og: {
-        title: scraper.getOg("title"),
-        description: scraper.getOg("description"),
-        image: scraper.getOg("image"),
-        imageAlt: scraper.getOg("image:alt"),
-        imageWidth: scraper.getOg("image:width"),
-        imageHeight: scraper.getOg("image:height"),
-        url: scraper.getOg("url"),
-        type: scraper.getOg("type"),
-        siteName: scraper.getOg("site_name"),
-      },
-      twitter: {
-        title: scraper.getTwitter("title"),
-        description: scraper.getTwitter("description"),
-        image: scraper.getTwitter("image"),
-        site: scraper.getTwitter("site"),
-        card: scraper.getTwitter("card"),
-      },
-      oembed,
-    };
+  const metadata = tryCatch(() => ({
+    title: scraper.$("title")?.textContent,
+    description: scraper.getMeta("description"),
+    favicon,
+    themeColor: scraper.getMeta("theme-color"),
+    og: {
+      title: scraper.getOg("title"),
+      description: scraper.getOg("description"),
+      image: scraper.getOg("image"),
+      imageAlt: scraper.getOg("image:alt"),
+      imageWidth: scraper.getOg("image:width"),
+      imageHeight: scraper.getOg("image:height"),
+      url: scraper.getOg("url"),
+      type: scraper.getOg("type"),
+      siteName: scraper.getOg("site_name"),
+    },
+    twitter: {
+      title: scraper.getTwitter("title"),
+      description: scraper.getTwitter("description"),
+      image: scraper.getTwitter("image"),
+      site: scraper.getTwitter("site"),
+      card: scraper.getTwitter("card"),
+    },
+    oembed,
+  }));
 
-    logger.response("Responding with metadata");
-
-    return metadata;
-  } catch (error) {
-    logger.error(
-      error instanceof Error ? error.stack ?? error.message : String(error),
-    );
-    return {
-      error: error instanceof Error ? error.message : String(error),
-    };
+  if (metadata.isErr()) {
+    logger.error(metadata.error.message);
+    status(400);
+    return { error: metadata.error };
   }
+
+  logger.response("Responding with metadata");
+
+  return metadata.value;
 });
 
 app.listen(3000);

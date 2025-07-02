@@ -1,62 +1,75 @@
 import checkIfLocalhost from "is-localhost-ip";
 import parse, { HTMLElement } from "node-html-parser";
-import { tryCatch } from "typecatch";
+import { tryCatch } from "typecatch-neverthrow";
 import { tryCache } from "./cache";
 import { logger } from "./logger";
+import { err, ok, type Result } from "neverthrow";
 
 export class Scraper {
   #url?: URL;
   #root?: HTMLElement;
 
-  async init(url: string) {
-    this.#url = await this.#validateUrl(url);
-    const pageFetch = await tryCatch(
+  async init(url: string): Promise<Result<void, string>> {
+    const validatedUrl = await this.#validateUrl(url);
+
+    if (validatedUrl.isErr()) {
+      return err(validatedUrl.error);
+    }
+
+    this.#url = validatedUrl.value;
+
+    const pageData = await tryCatch(
       tryCache(
         this.#url.toString(),
         async () => await fetch(this.#url!).then((res) => res.text()),
       ),
     );
 
-    if (pageFetch.error) {
-      throw new Error(
-        `Failed to fetch URL: ${this.#url}, with error ${pageFetch.error.message}`,
+    if (pageData.isErr()) {
+      return err(
+        `Failed to fetch URL: ${this.#url}, with error ${pageData.error.message}`,
       );
     }
 
-    if (typeof pageFetch.data === "undefined") {
-      throw new Error("Data is undefined");
+    if (typeof pageData.value === "undefined") {
+      return err("Data is undefined");
     }
 
-    const pageParse = tryCatch(() => parse(pageFetch.data));
+    const parsedPageData = tryCatch(() => parse(pageData.value));
 
-    if (pageParse.error) {
+    if (parsedPageData.isErr()) {
       logger.error(
-        `Failed to parse HTML for ${this.#url}: ${pageParse.error.message}`,
+        `Failed to parse HTML for ${this.#url}: ${parsedPageData.error.message}`,
       );
-      throw new Error(`Failed to parse: ${pageParse.error.message}`);
+      return err(`Failed to parse: ${parsedPageData.error.message}`);
     }
 
     logger.parse("Successfully parsed HTML");
-    this.#root = pageParse.data;
+    this.#root = parsedPageData.value;
+
+    return ok(undefined);
   }
 
-  async #validateUrl(url: string) {
+  async #validateUrl(url: string): Promise<Result<URL, string>> {
     logger.validate("Validating URL...");
-    const urlValidate = tryCatch(() => new URL(url));
+    const validatedUrl = tryCatch(() => URL.parse(url));
 
-    if (urlValidate.error) {
-      throw new Error(`Invalid URL: ${urlValidate.error.message}`);
+    if (validatedUrl.isErr()) {
+      return err(`Invalid URL: ${validatedUrl.error.message}`);
+    }
+    if (!validatedUrl.value) {
+      return err("Invalid URL");
     }
 
-    const isLocalHost = await checkIfLocalhost(urlValidate.data.hostname);
+    const isLocalHost = await checkIfLocalhost(validatedUrl.value.hostname);
 
     if (isLocalHost) {
       logger.warn("Blocked localhost URL");
-      throw new Error("Access to localhost not allowed");
+      return err("Access to localhost not allowed");
     }
 
     logger.validate("URL is valid and allowed");
-    return urlValidate.data;
+    return ok(validatedUrl.value);
   }
 
   $<T = HTMLElement>(selector: string) {
