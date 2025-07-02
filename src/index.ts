@@ -36,7 +36,7 @@ app.get("/*", async ({ path, status, request, redirect }) => {
   const assetScrape = await tryCatch(
     Promise.all([
       scraper.getFavicon(),
-      scraper.getOembed(),
+      !faviconOnly ? scraper.getOembed() : null,
     ]),
   );
 
@@ -47,6 +47,10 @@ app.get("/*", async ({ path, status, request, redirect }) => {
   }
 
   const [favicon, oembed] = assetScrape.data;
+
+  if (faviconOnly && favicon) {
+    return redirect(favicon);
+  }
 
   try {
     const metadata = {
@@ -76,10 +80,6 @@ app.get("/*", async ({ path, status, request, redirect }) => {
     };
 
     logger.response("Responding with metadata");
-
-    if (faviconOnly && favicon) {
-      return redirect(favicon);
-    }
 
     return metadata;
   } catch (error) {
