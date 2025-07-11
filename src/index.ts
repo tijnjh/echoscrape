@@ -18,7 +18,7 @@ app.get('/', ({ request }) => ({
 }))
 
 app.get('/*', async ({ path, status, request, redirect }) => {
-  const program = (path: string, request: Request) => Effect.gen(function* () {
+  const program = Effect.fn(function* (path: string, request: Request) {
     if (path.startsWith('/')) {
       path = path.slice(1)
     }
