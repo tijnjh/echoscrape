@@ -1,7 +1,9 @@
+import { FetchHttpClient } from '@effect/platform'
 import cors from '@elysiajs/cors'
-import { Console, Effect } from 'effect'
+import { consola } from 'consola'
+import { Effect } from 'effect'
 import { Elysia } from 'elysia'
-import { InMemoryCacheLayer } from './cache.js'
+import { tryCache } from './cache.js'
 import { Scraper } from './scraper.js'
 
 const app = new Elysia()
@@ -16,7 +18,7 @@ app.get('/', ({ request }) => ({
 }))
 
 app.get('/*', async ({ path, status, request, redirect }) => {
-  const program = Effect.gen(function* () {
+  const program = (path: string, request: Request) => Effect.gen(function* () {
     if (path.startsWith('/')) {
       path = path.slice(1)
     }
@@ -30,7 +32,7 @@ app.get('/*', async ({ path, status, request, redirect }) => {
     const [favicon, oembed] = yield* Effect.all([
       scraper.getFavicon(),
       !faviconOnly ? scraper.getOembed() : Effect.succeed(null),
-    ], { concurrency: 2 })
+    ], { concurrency: 'unbounded' })
 
     if (faviconOnly && favicon) {
       return { type: 'redirect' as const, url: favicon }
@@ -62,51 +64,56 @@ app.get('/*', async ({ path, status, request, redirect }) => {
       oembed,
     }
 
-    Effect.logInfo('Responding with metadata')
+    consola.success('Responding with metadata...')
 
     return { type: 'success' as const, metadata }
   })
 
   const res = await Effect.runPromise(
-    program.pipe(
-      Effect.provide(InMemoryCacheLayer),
+    tryCache(path, () => program(path, request).pipe(
+      Effect.provide(FetchHttpClient.layer),
       Effect.catchTags({
-        InvalidUrlError: error =>
-          Effect.succeed({
-            type: 'error' as const,
-            message: error.message,
-            status: 400,
-          }),
-        LocalhostError: error =>
-          Effect.succeed({
-            type: 'error' as const,
-            message: error.message,
-            status: 400,
-          }),
-        FetchError: error =>
-          Effect.succeed({
-            type: 'error' as const,
-            message: error.message,
-            status: 400,
-          }),
-        ParseError: error =>
-          Effect.succeed({
-            type: 'error' as const,
-            message: error.message,
-            status: 400,
-          }),
+        InvalidUrlError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        LocalhostError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        FetchError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        ParseError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        RequestError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        ResponseError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 500,
+        }),
       }),
       Effect.catchAllCause((cause) => {
-        console.error('Unexpected error:', cause)
+        Effect.runPromise(Effect.logError('Unexpected error:', cause))
         return Effect.succeed({
           type: 'error' as const,
           message: 'Internal server error',
           status: 500,
         })
       }),
-    ),
+    )),
   )
-
   switch (res.type) {
     case 'redirect':
       return redirect(res.url)
@@ -118,6 +125,9 @@ app.get('/*', async ({ path, status, request, redirect }) => {
   }
 })
 
+// ignore favicon requests
+app.get('/favicon.ico', () => ({}))
+
 app.listen(3000)
 
-Effect.runPromise(Console.log(`🦊 Elysia is running at http://localhost:3000`))
+consola.info('echoscrape is running at http://localhost:3000')

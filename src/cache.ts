@@ -1,55 +1,20 @@
-import { Context, Effect, Layer } from 'effect'
+import consola from 'consola'
+import { Effect } from 'effect'
 
-export interface CacheService {
-  readonly get: <T>(key: string) => Effect.Effect<T | undefined>
-  readonly set: <T>(key: string, value: T) => Effect.Effect<void>
-  readonly has: (key: string) => Effect.Effect<boolean>
-}
+const cache: Record<string, any> = {}
 
-// eslint-disable-next-line ts/no-redeclare
-export const CacheService = Context.GenericTag<CacheService>('CacheService')
-
-export function makeInMemoryCache(): CacheService {
-  const cache = new Map<string, unknown>()
-
-  return {
-    get: <T>(key: string) =>
-      Effect.gen(function* () {
-        const value = cache.get(key) as T | undefined
-        if (value !== undefined) {
-          yield* Effect.logInfo('Cache hit. Returning cached data.')
-        }
-        return value
-      }),
-
-    set: <T>(key: string, value: T) =>
-      Effect.gen(function* () {
-        cache.set(key, value)
-        yield* Effect.logInfo('Data cached')
-      }),
-
-    has: (key: string) => Effect.succeed(cache.has(key)),
-  }
-}
-
-export const InMemoryCacheLayer = Layer.succeed(
-  CacheService,
-  makeInMemoryCache(),
-)
-
-export function tryCache<T, E, R>(key: string, fn: () => Effect.Effect<T, E, R>): Effect.Effect<T, E, R | CacheService> {
+export function tryCache<A, E, R>(key: string, fn: () => Effect.Effect<A, E, R>) {
   return Effect.gen(function* () {
-    const cache = yield* CacheService
-
-    const cached = yield* cache.get<T>(key)
-    if (cached !== undefined) {
-      return cached
+    if (typeof cache[key] === 'undefined') {
+      consola.info('Cache miss. Fetching data...')
+      const data = yield* fn()
+      cache[key] = data
+      consola.info('Data cached')
+      return data
     }
-
-    yield* Effect.logInfo('Cache miss. Fetching data...')
-    const data = yield* fn()
-    yield* cache.set(key, data)
-
-    return data
+    else {
+      consola.info(`Cache hit. Returning cached data.`)
+      return cache[key] as A
+    }
   })
 }

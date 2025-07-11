@@ -1,127 +1,145 @@
 import type { HTMLElement } from 'node-html-parser'
-import type { CacheService } from './cache'
-import { Effect } from 'effect'
+import { HttpClient } from '@effect/platform'
+import consola from 'consola'
+import { Data, Effect } from 'effect'
 import checkIfLocalhost from 'is-localhost-ip'
+import isValidDomain from 'is-valid-domain'
 import parse from 'node-html-parser'
-import { tryCache } from './cache'
-import { FetchError, InvalidUrlError, LocalhostError, ParseError } from './errors'
+
+export class InvalidUrlError extends Data.TaggedError('InvalidUrlError')<{
+  message: string
+}> {}
+export class FetchError extends Data.TaggedError('FetchError')<{
+  message: string
+}> {}
+export class ParseError extends Data.TaggedError('ParseError')<{
+  message: string
+}> {}
+export class LocalhostError extends Data.TaggedError('LocalhostError')<{
+  message: string
+}> {}
 
 export class Scraper {
   #url?: URL
   #root?: HTMLElement
 
-  init = (url: string): Effect.Effect<void, InvalidUrlError | LocalhostError | FetchError | ParseError, CacheService> => Effect.gen(this, function* () {
-    const validatedUrl = yield* this.#validateUrl(url)
-    this.#url = validatedUrl
+  init = (url: string) => Effect.gen(this, function* () {
+    this.#url = yield* this.#validateUrl(url)
 
-    const pageData = yield* tryCache(this.#url.toString(), () =>
-      Effect.tryPromise({
-        try: () => fetch(this.#url!).then(res => res.text()),
-        catch: error => new FetchError(`Failed to fetch URL: ${this.#url}, with error ${(error as Error).message}`),
-      }))
-
-    const parsedPageData = yield* Effect.try({
-      try: () => parse(pageData),
-      catch: error => new ParseError(`Failed to parse: ${(error as Error).message}`),
-    })
-
-    yield* Effect.logInfo('Successfully parsed HTML')
-    this.#root = parsedPageData
+    this.#root = yield* HttpClient.get(this.#url!).pipe(
+      Effect.andThen(response => response.text),
+      Effect.andThen(text => Effect.try({
+        try: () => parse(text),
+        catch: error => new ParseError({ message: `failed to parse HTML: ${error}` }),
+      })),
+    )
   })
 
-  #validateUrl = (url: string): Effect.Effect<URL, InvalidUrlError | LocalhostError> => Effect.gen(this, function* () {
-    yield* Effect.logInfo('Validating URL...')
+  #validateUrl = (url: string) => Effect.gen(this, function* () {
+    if (!(url.startsWith('http://') || url.startsWith('https://'))) {
+      url = `http://${url}`
+      consola.info(`URL did not start with http(s)://, rewriting to ${url}...`)
+    }
 
     const validatedUrl = yield* Effect.try({
       try: () => {
-        const parsed = new URL(url)
-        if (!parsed)
-          throw new Error('Invalid URL')
-        return parsed
+        const parsedUrl = new URL(url)
+
+        if (!isValidDomain(parsedUrl.hostname)) {
+          throw new InvalidUrlError({ message: `Invalid URL: '${url}' is not a valid URL` })
+        }
+
+        consola.success('URL is valid')
+
+        return new URL(url)
       },
-      catch: error => new InvalidUrlError(`Invalid URL: ${(error as Error).message}`),
+      catch: (error) => {
+        const err = new InvalidUrlError(error as Error)
+        consola.fail(err)
+        return err
+      },
     })
 
     const isLocalHost = yield* Effect.tryPromise({
       try: () => checkIfLocalhost(validatedUrl.hostname),
-      catch: error => new LocalhostError(`Failed to check localhost: ${(error as Error).message}`),
+      catch: error => new LocalhostError({ message: `Failed to check localhost: ${(error as Error).message}` }),
     })
 
     if (isLocalHost) {
-      yield* Effect.logError('Blocked localhost URL')
-      yield* Effect.fail(
-        new LocalhostError('Access to localhost not allowed'),
-      )
+      const err = new LocalhostError({ message: 'Access to localhost is not allowed' })
+      consola.error(err)
+      yield* Effect.fail(err)
     }
 
-    yield* Effect.logInfo('URL is valid and allowed')
+    consola.success('URL is allowed')
     return validatedUrl
   })
 
-  $ = <T = HTMLElement>(selector: string): Effect.Effect<T | null> => Effect.gen(this, function* () {
-    return this.#root?.querySelector(selector) as T
-  })
-
-  getMeta = (name: string): Effect.Effect<string | undefined, Error> => Effect.gen(this, function* () {
-    const value = (yield* this.$(`meta[name=${name}]`))?.getAttribute('content')
-
-    if (value) {
-      yield* Effect.logInfo(`meta[name=${name}] = ${value}`)
+  $ = <T = HTMLElement>(selector: string) => Effect.gen(this, function* () {
+    const element = this.#root?.querySelector(selector)
+    if (!element) {
+      consola.fail(`${selector}: No element found`)
+      return undefined
     }
 
-    return value
+    consola.success(`${selector}: Found element → ${element.tagName}`)
+
+    return element as T
   })
 
-  getOg = (property: string): Effect.Effect<string | undefined, Error> => Effect.gen(this, function* () {
+  getMeta = (name: string) => Effect.gen(this, function* () {
+    return (yield* this.$(`meta[name=${name}]`))?.getAttribute('content')
+  })
+
+  getOg = (property: string) => Effect.gen(this, function* () {
     const el = yield* this.$(`meta[property=og:${property}]`)
     return el?.getAttribute('content')
   })
 
-  getTwitter = (name: string): Effect.Effect<string | undefined, Error> => this.getMeta(`twitter:${name}`)
+  getTwitter = (name: string) => this.getMeta(`twitter:${name}`)
 
-  getOembed = (): Effect.Effect<Record<string, unknown>, FetchError | Error> => Effect.gen(this, function* () {
+  getOembed = () => Effect.gen(this, function* () {
     const oembedUrl = (yield* this.$<HTMLLinkElement>('link[rel="alternate"][type="application/json+oembed"]'))?.getAttribute('href')
 
     if (oembedUrl) {
-      yield* Effect.logInfo('Detected oembed')
+      consola.info('Detected oembed')
 
       const oembed = yield* Effect.tryPromise({
         try: () => fetch(oembedUrl).then(res => res.json()),
-        catch: error => new FetchError(`Failed to fetch oembed: ${(error as Error).message}`),
+        catch: error => new FetchError({ message: `Failed to fetch oembed: ${(error as Error).message}` }),
       })
 
       return oembed as Record<string, unknown>
     }
     else {
-      yield* Effect.logInfo('Website doesn\'t seem to have oembed...')
+      consola.fail('Website doesn\'t seem to have oEmbed, skipping...')
       return {}
     }
   })
 
-  getFavicon = (): Effect.Effect<string | undefined, FetchError | Error> => Effect.gen(this, function* () {
-    let favicon
-      = (yield* this.$('link[rel="icon"]'))?.getAttribute('href')
-        || (yield* this.$('link[rel="shortcut icon"]'))?.getAttribute('href')
-        || (yield* this.$('link[rel="apple-touch-icon"]'))?.getAttribute('href')
+  getFavicon = () => Effect.gen(this, function* () {
+    let favicon = (yield* this.$('link[rel="icon"]'))?.getAttribute('href')
+      || (yield* this.$('link[rel="shortcut icon"]'))?.getAttribute('href')
+      || (yield* this.$('link[rel="apple-touch-icon"]'))?.getAttribute('href')
 
     if (favicon) {
       favicon = new URL(favicon, this.#url?.href)?.href
-      yield* Effect.logInfo(`Favicon found in HTML: ${favicon}`)
+      consola.success(`Favicon found in HTML → ${favicon}`)
       return favicon
     }
     else {
       const faviconUrl = new URL('/favicon.ico', this.#url?.href).href
       const response = yield* Effect.tryPromise({
         try: () => fetch(faviconUrl, { method: 'HEAD' }),
-        catch: error => new FetchError(`Failed to check favicon: ${(error as Error).message}`),
+        catch: error => new FetchError({ message: `Failed to check favicon: ${(error as Error).message}` }),
       })
 
       if (response.ok) {
-        yield* Effect.logInfo('Fetched /favicon.ico')
+        consola.success('Fetched /favicon.ico')
         return faviconUrl
       }
       else {
-        yield* Effect.logInfo('No favicon found.')
+        consola.info('No favicon found.')
         return undefined
       }
     }
