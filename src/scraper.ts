@@ -1,134 +1,147 @@
-import checkIfLocalhost from "is-localhost-ip";
-import parse, { HTMLElement } from "node-html-parser";
-import { tryCatch } from "typecatch-neverthrow";
-import { tryCache } from "./cache";
-import { logger } from "./logger";
-import { err, ok, type Result } from "neverthrow";
+import type { HTMLElement } from 'node-html-parser'
+import { HttpClient } from '@effect/platform'
+import consola from 'consola'
+import { Data, Effect } from 'effect'
+import checkIfLocalhost from 'is-localhost-ip'
+import isValidDomain from 'is-valid-domain'
+import parse from 'node-html-parser'
+
+export class InvalidUrlError extends Data.TaggedError('InvalidUrlError')<{
+  message: string
+}> {}
+export class FetchError extends Data.TaggedError('FetchError')<{
+  message: string
+}> {}
+export class ParseError extends Data.TaggedError('ParseError')<{
+  message: string
+}> {}
+export class LocalhostError extends Data.TaggedError('LocalhostError')<{
+  message: string
+}> {}
 
 export class Scraper {
-  #url?: URL;
-  #root?: HTMLElement;
+  #url?: URL
+  #root?: HTMLElement
 
-  async init(url: string): Promise<Result<void, string>> {
-    const validatedUrl = await this.#validateUrl(url);
+  init = (url: string) => Effect.gen(this, function* () {
+    this.#url = yield* this.#validateUrl(url)
 
-    if (validatedUrl.isErr()) {
-      return err(validatedUrl.error);
+    this.#root = yield* HttpClient.get(this.#url!).pipe(
+      Effect.andThen(response => response.text),
+      Effect.andThen(text => Effect.try({
+        try: () => parse(text),
+        catch: error => new ParseError({ message: `failed to parse HTML: ${error}` }),
+      })),
+    )
+  })
+
+  #validateUrl = (url: string) => Effect.gen(this, function* () {
+    if (!(url.startsWith('http://') || url.startsWith('https://'))) {
+      url = `http://${url}`
+      consola.info(`URL did not start with http(s)://, rewriting to ${url}...`)
     }
 
-    this.#url = validatedUrl.value;
+    const validatedUrl = yield* Effect.try({
+      try: () => {
+        const parsedUrl = new URL(url)
 
-    const pageData = await tryCatch(
-      tryCache(
-        this.#url.toString(),
-        async () => await fetch(this.#url!).then((res) => res.text()),
-      ),
-    );
+        if (!isValidDomain(parsedUrl.hostname)) {
+          throw new InvalidUrlError({ message: `Invalid URL: '${url}' is not a valid URL` })
+        }
 
-    if (pageData.isErr()) {
-      return err(
-        `Failed to fetch URL: ${this.#url}, with error ${pageData.error.message}`,
-      );
-    }
+        consola.success('URL is valid')
 
-    if (typeof pageData.value === "undefined") {
-      return err("Data is undefined");
-    }
+        return new URL(url)
+      },
+      catch: (error) => {
+        const err = new InvalidUrlError(error as Error)
+        consola.fail(err)
+        return err
+      },
+    })
 
-    const parsedPageData = tryCatch(() => parse(pageData.value));
-
-    if (parsedPageData.isErr()) {
-      logger.error(
-        `Failed to parse HTML for ${this.#url}: ${parsedPageData.error.message}`,
-      );
-      return err(`Failed to parse: ${parsedPageData.error.message}`);
-    }
-
-    logger.parse("Successfully parsed HTML");
-    this.#root = parsedPageData.value;
-
-    return ok(undefined);
-  }
-
-  async #validateUrl(url: string): Promise<Result<URL, string>> {
-    logger.validate("Validating URL...");
-    const validatedUrl = tryCatch(() => URL.parse(url));
-
-    if (validatedUrl.isErr()) {
-      return err(`Invalid URL: ${validatedUrl.error.message}`);
-    }
-    if (!validatedUrl.value) {
-      return err("Invalid URL");
-    }
-
-    const isLocalHost = await checkIfLocalhost(validatedUrl.value.hostname);
+    const isLocalHost = yield* Effect.tryPromise({
+      try: () => checkIfLocalhost(validatedUrl.hostname),
+      catch: error => new LocalhostError({ message: `Failed to check localhost: ${(error as Error).message}` }),
+    })
 
     if (isLocalHost) {
-      logger.warn("Blocked localhost URL");
-      return err("Access to localhost not allowed");
+      const err = new LocalhostError({ message: 'Access to localhost is not allowed' })
+      consola.error(err)
+      yield* Effect.fail(err)
     }
 
-    logger.validate("URL is valid and allowed");
-    return ok(validatedUrl.value);
-  }
+    consola.success('URL is allowed')
+    return validatedUrl
+  })
 
-  $<T = HTMLElement>(selector: string) {
-    return (this.#root?.querySelector(selector) as T) ?? null;
-  }
-
-  getMeta(name: string) {
-    const value = this.$(`meta[name=${name}]`)?.getAttribute("content");
-    if (value) {
-      logger.meta(`meta[name=${name}] = ${value}`);
+  $ = <T = HTMLElement>(selector: string) => Effect.gen(this, function* () {
+    const element = this.#root?.querySelector(selector)
+    if (!element) {
+      consola.fail(`${selector}: No element found`)
+      return undefined
     }
-    return value;
-  }
 
-  getOg(property: string) {
-    return this.$(`meta[property=og:${property}]`)?.getAttribute("content");
-  }
+    consola.success(`${selector}: Found element → ${element.tagName}`)
 
-  getTwitter(name: string) {
-    return this.getMeta(`twitter:${name}`);
-  }
+    return element as T
+  })
 
-  async getOembed() {
-    let oembed = {};
+  getMeta = (name: string) => Effect.gen(this, function* () {
+    return (yield* this.$(`meta[name=${name}]`))?.getAttribute('content')
+  })
 
-    const oembedUrl = this.$<HTMLLinkElement>(
-      'link[rel="alternate"][type="application/json+oembed"]',
-    )?.getAttribute("href");
+  getOg = (property: string) => Effect.gen(this, function* () {
+    const el = yield* this.$(`meta[property=og:${property}]`)
+    return el?.getAttribute('content')
+  })
+
+  getTwitter = (name: string) => this.getMeta(`twitter:${name}`)
+
+  getOembed = () => Effect.gen(this, function* () {
+    const oembedUrl = (yield* this.$<HTMLLinkElement>('link[rel="alternate"][type="application/json+oembed"]'))?.getAttribute('href')
 
     if (oembedUrl) {
-      logger.oembed(`Detected oembed`);
-      oembed = await fetch(oembedUrl).then((res) => res.json());
-    } else {
-      logger.oembed("Website doesn't seem to have oembed...");
+      consola.info('Detected oembed')
+
+      const oembed = yield* Effect.tryPromise({
+        try: () => fetch(oembedUrl).then(res => res.json()),
+        catch: error => new FetchError({ message: `Failed to fetch oembed: ${(error as Error).message}` }),
+      })
+
+      return oembed as Record<string, unknown>
     }
+    else {
+      consola.fail('Website doesn\'t seem to have oEmbed, skipping...')
+      return {}
+    }
+  })
 
-    return oembed;
-  }
-
-  async getFavicon() {
-    let favicon = this.$('link[rel="icon"]')?.getAttribute("href") ||
-      this.$('link[rel="shortcut icon"]')?.getAttribute("href") ||
-      this.$('link[rel="apple-touch-icon"]')?.getAttribute("href");
+  getFavicon = () => Effect.gen(this, function* () {
+    let favicon = (yield* this.$('link[rel="icon"]'))?.getAttribute('href')
+      || (yield* this.$('link[rel="shortcut icon"]'))?.getAttribute('href')
+      || (yield* this.$('link[rel="apple-touch-icon"]'))?.getAttribute('href')
 
     if (favicon) {
-      favicon = new URL(favicon, this.#url?.href).href;
-      logger.favicon(`Favicon found in HTML: ${favicon}`);
-    } else {
-      const faviconUrl = new URL("/favicon.ico", this.#url?.href).href;
-      const response = await fetch(faviconUrl, { method: "HEAD" });
+      favicon = new URL(favicon, this.#url?.href)?.href
+      consola.success(`Favicon found in HTML → ${favicon}`)
+      return favicon
+    }
+    else {
+      const faviconUrl = new URL('/favicon.ico', this.#url?.href).href
+      const response = yield* Effect.tryPromise({
+        try: () => fetch(faviconUrl, { method: 'HEAD' }),
+        catch: error => new FetchError({ message: `Failed to check favicon: ${(error as Error).message}` }),
+      })
 
       if (response.ok) {
-        favicon = faviconUrl;
-        logger.favicon("Fetched /favicon.ico");
-      } else {
-        logger.favicon("No favicon found.");
+        consola.success('Fetched /favicon.ico')
+        return faviconUrl
+      }
+      else {
+        consola.info('No favicon found.')
+        return undefined
       }
     }
-
-    return favicon;
-  }
+  })
 }

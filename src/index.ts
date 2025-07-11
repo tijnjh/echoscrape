@@ -1,86 +1,133 @@
-import cors from "@elysiajs/cors";
-import { Elysia } from "elysia";
-import { logger } from "./logger";
-import { Scraper } from "./scraper";
-import { tryCatch } from "typecatch-neverthrow";
+import { FetchHttpClient } from '@effect/platform'
+import cors from '@elysiajs/cors'
+import { consola } from 'consola'
+import { Effect } from 'effect'
+import { Elysia } from 'elysia'
+import { tryCache } from './cache.js'
+import { Scraper } from './scraper.js'
 
-const app = new Elysia();
+const app = new Elysia()
 
-app.use(cors());
+app.use(cors())
 
-app.get("/", ({ request }) => ({
+app.get('/', ({ request }) => ({
   instruction: `Go to ${request.url}{your-url}`,
   echoscrape: {
-    source: "https://github.com/tijnjh/echoscrape",
+    source: 'https://github.com/tijnjh/echoscrape',
   },
-}));
+}))
 
-app.get("/*", async ({ path, status, request, redirect }) => {
-  if (path.startsWith("/")) {
-    path = path.replace("/", "");
+app.get('/*', async ({ path, status, request, redirect }) => {
+  const program = Effect.fn(function* (path: string, request: Request) {
+    if (path.startsWith('/')) {
+      path = path.slice(1)
+    }
+
+    const faviconOnly = new URL(request.url).searchParams.has('favicon')
+
+    Effect.logInfo(path)
+    const scraper = new Scraper()
+    yield* scraper.init(path)
+
+    const [favicon, oembed] = yield* Effect.all([
+      scraper.getFavicon(),
+      !faviconOnly ? scraper.getOembed() : Effect.succeed(null),
+    ], { concurrency: 'unbounded' })
+
+    if (faviconOnly && favicon) {
+      return { type: 'redirect' as const, url: favicon }
+    }
+
+    const metadata = {
+      title: (yield* scraper.$('title'))?.textContent,
+      description: yield* scraper.getMeta('description'),
+      favicon,
+      themeColor: yield* scraper.getMeta('theme-color'),
+      og: {
+        title: yield* scraper.getOg('title'),
+        description: yield* scraper.getOg('description'),
+        image: yield* scraper.getOg('image'),
+        imageAlt: yield* scraper.getOg('image:alt'),
+        imageWidth: yield* scraper.getOg('image:width'),
+        imageHeight: yield* scraper.getOg('image:height'),
+        url: yield* scraper.getOg('url'),
+        type: yield* scraper.getOg('type'),
+        siteName: yield* scraper.getOg('site_name'),
+      },
+      twitter: {
+        title: yield* scraper.getTwitter('title'),
+        description: yield* scraper.getTwitter('description'),
+        image: yield* scraper.getTwitter('image'),
+        site: yield* scraper.getTwitter('site'),
+        card: yield* scraper.getTwitter('card'),
+      },
+      oembed,
+    }
+
+    consola.success('Responding with metadata...')
+
+    return { type: 'success' as const, metadata }
+  })
+
+  const res = await Effect.runPromise(
+    tryCache(path, () => program(path, request).pipe(
+      Effect.provide(FetchHttpClient.layer),
+      Effect.catchTags({
+        InvalidUrlError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        LocalhostError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        FetchError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        ParseError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        RequestError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 400,
+        }),
+        ResponseError: error => Effect.succeed({
+          type: 'error' as const,
+          message: error.message,
+          status: 500,
+        }),
+      }),
+      Effect.catchAllCause((cause) => {
+        Effect.runPromise(Effect.logError('Unexpected error:', cause))
+        return Effect.succeed({
+          type: 'error' as const,
+          message: 'Internal server error',
+          status: 500,
+        })
+      }),
+    )),
+  )
+  switch (res.type) {
+    case 'redirect':
+      return redirect(res.url)
+    case 'error':
+      status(res.status)
+      return { error: res.message }
+    case 'success':
+      return res.metadata
   }
+})
 
-  const faviconOnly = new URL(request.url).searchParams.has("favicon");
+// ignore favicon requests
+app.get('/favicon.ico', () => ({}))
 
-  logger.request(path);
+app.listen(3000)
 
-  const scraper = new Scraper();
-  const scraperInit = await scraper.init(path);
-
-  if (scraperInit.isErr()) {
-    logger.error(scraperInit.error);
-    status(400);
-    return { error: scraperInit.error };
-  }
-
-  const [favicon, oembed] = await Promise.all([
-    scraper.getFavicon(),
-    !faviconOnly ? scraper.getOembed() : null,
-  ]);
-
-  if (faviconOnly && favicon) {
-    return redirect(favicon);
-  }
-
-  const metadata = tryCatch(() => ({
-    title: scraper.$("title")?.textContent,
-    description: scraper.getMeta("description"),
-    favicon,
-    themeColor: scraper.getMeta("theme-color"),
-    og: {
-      title: scraper.getOg("title"),
-      description: scraper.getOg("description"),
-      image: scraper.getOg("image"),
-      imageAlt: scraper.getOg("image:alt"),
-      imageWidth: scraper.getOg("image:width"),
-      imageHeight: scraper.getOg("image:height"),
-      url: scraper.getOg("url"),
-      type: scraper.getOg("type"),
-      siteName: scraper.getOg("site_name"),
-    },
-    twitter: {
-      title: scraper.getTwitter("title"),
-      description: scraper.getTwitter("description"),
-      image: scraper.getTwitter("image"),
-      site: scraper.getTwitter("site"),
-      card: scraper.getTwitter("card"),
-    },
-    oembed,
-  }));
-
-  if (metadata.isErr()) {
-    logger.error(metadata.error.message);
-    status(400);
-    return { error: metadata.error };
-  }
-
-  logger.response("Responding with metadata");
-
-  return metadata.value;
-});
-
-app.listen(3000);
-
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
-);
+consola.info('echoscrape is running at http://localhost:3000')
