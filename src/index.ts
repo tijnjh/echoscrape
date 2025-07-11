@@ -1,23 +1,24 @@
+import type { StatusCode } from 'hono/utils/http-status'
 import { FetchHttpClient } from '@effect/platform'
-import cors from '@elysiajs/cors'
 import { consola } from 'consola'
 import { Effect } from 'effect'
-import { Elysia } from 'elysia'
-import { tryCache } from './cache.js'
-import { Scraper } from './scraper.js'
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { Scraper } from './scraper'
+import { objectOrUndefined, tryCache } from './utils'
 
-const app = new Elysia()
+const app = new Hono()
 
 app.use(cors())
 
-app.get('/', ({ request }) => ({
-  instruction: `Go to ${request.url}{your-url}`,
+app.get('/', c => c.json({
+  instruction: `Go to ${c.req.url}{your-url}`,
   echoscrape: {
     source: 'https://github.com/tijnjh/echoscrape',
   },
 }))
 
-app.get('/*', async ({ path, status, request, redirect }) => {
+app.get('/*', async (c) => {
   const program = Effect.fn(function* (path: string, request: Request) {
     if (path.startsWith('/')) {
       path = path.slice(1)
@@ -38,30 +39,32 @@ app.get('/*', async ({ path, status, request, redirect }) => {
       return { type: 'redirect' as const, url: favicon }
     }
 
+    const { $ } = scraper
+
     const metadata = {
-      title: (yield* scraper.$('title'))?.textContent,
-      description: yield* scraper.getMeta('description'),
+      title: (yield* $('title'))?.textContent,
+      description: (yield* $('meta[name=description]'))?.getAttribute('content'),
       favicon,
-      themeColor: yield* scraper.getMeta('theme-color'),
-      og: {
-        title: yield* scraper.getOg('title'),
-        description: yield* scraper.getOg('description'),
-        image: yield* scraper.getOg('image'),
-        imageAlt: yield* scraper.getOg('image:alt'),
-        imageWidth: yield* scraper.getOg('image:width'),
-        imageHeight: yield* scraper.getOg('image:height'),
-        url: yield* scraper.getOg('url'),
-        type: yield* scraper.getOg('type'),
-        siteName: yield* scraper.getOg('site_name'),
-      },
-      twitter: {
-        title: yield* scraper.getTwitter('title'),
-        description: yield* scraper.getTwitter('description'),
-        image: yield* scraper.getTwitter('image'),
-        site: yield* scraper.getTwitter('site'),
-        card: yield* scraper.getTwitter('card'),
-      },
-      oembed,
+      themeColor: (yield* $('meta[name=theme-color]'))?.getAttribute('content'),
+      og: objectOrUndefined({
+        title: (yield* $('meta[property=og:title]'))?.getAttribute('content'),
+        description: (yield* $('meta[property=og:description]'))?.getAttribute('content'),
+        image: (yield* $('meta[property=og:image]'))?.getAttribute('content'),
+        imageAlt: (yield* $('meta[property=og:image:alt]'))?.getAttribute('content'),
+        imageWidth: (yield* $('meta[property=og:image:width]'))?.getAttribute('content'),
+        imageHeight: (yield* $('meta[property=og:image:height]'))?.getAttribute('content'),
+        url: (yield* $('meta[property=og:url]'))?.getAttribute('content'),
+        type: (yield* $('meta[property=og:type]'))?.getAttribute('content'),
+        siteName: (yield* $('meta[property=og:site_name]'))?.getAttribute('content'),
+      }),
+      twitter: objectOrUndefined({
+        title: (yield* $('meta[name=twitter:title]'))?.getAttribute('content'),
+        description: (yield* $('meta[name=twitter:description]'))?.getAttribute('content'),
+        image: (yield* $('meta[name=twitter:image]'))?.getAttribute('content'),
+        site: (yield* $('meta[name=twitter:site]'))?.getAttribute('content'),
+        card: (yield* $('meta[name=twitter:card]'))?.getAttribute('content'),
+      }),
+      oembed: oembed ? objectOrUndefined(oembed) : undefined,
     }
 
     consola.success('Responding with metadata...')
@@ -70,64 +73,62 @@ app.get('/*', async ({ path, status, request, redirect }) => {
   })
 
   const res = await Effect.runPromise(
-    tryCache(path, () => program(path, request).pipe(
+    tryCache(c.req.path, () => program(c.req.path, c.req.raw).pipe(
       Effect.provide(FetchHttpClient.layer),
       Effect.catchTags({
         InvalidUrlError: error => Effect.succeed({
-          type: 'error' as const,
+          type: 'error',
           message: error.message,
           status: 400,
-        }),
+        } as const),
         LocalhostError: error => Effect.succeed({
-          type: 'error' as const,
+          type: 'error',
           message: error.message,
           status: 400,
-        }),
+        } as const),
         FetchError: error => Effect.succeed({
-          type: 'error' as const,
+          type: 'error',
           message: error.message,
           status: 400,
-        }),
+        } as const),
         ParseError: error => Effect.succeed({
-          type: 'error' as const,
+          type: 'error',
           message: error.message,
           status: 400,
-        }),
+        } as const),
         RequestError: error => Effect.succeed({
-          type: 'error' as const,
+          type: 'error',
           message: error.message,
           status: 400,
-        }),
+        } as const),
         ResponseError: error => Effect.succeed({
-          type: 'error' as const,
+          type: 'error',
           message: error.message,
           status: 500,
-        }),
+        } as const),
       }),
       Effect.catchAllCause((cause) => {
         Effect.runPromise(Effect.logError('Unexpected error:', cause))
         return Effect.succeed({
-          type: 'error' as const,
+          type: 'error',
           message: 'Internal server error',
           status: 500,
-        })
+        } as const)
       }),
     )),
   )
   switch (res.type) {
     case 'redirect':
-      return redirect(res.url)
+      return c.redirect(res.url)
     case 'error':
-      status(res.status)
-      return { error: res.message }
+      c.status(res.status as StatusCode)
+      return c.json({ error: res.message })
     case 'success':
-      return res.metadata
+      return c.json(res.metadata)
   }
 })
 
 // ignore favicon requests
-app.get('/favicon.ico', () => ({}))
+app.get('/favicon.ico', c => c.json({}))
 
-app.listen(3000)
-
-consola.info('echoscrape is running at http://localhost:3000')
+export default app

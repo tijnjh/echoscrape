@@ -18,3 +18,7 @@ export function tryCache<A, E, R>(key: string, fn: () => Effect.Effect<A, E, R>)
     }
   })
 }
+
+export function objectOrUndefined<T extends object>(obj: T) {
+  return Object.values(obj).filter(value => value !== undefined).length === 0 ? undefined : obj
+}

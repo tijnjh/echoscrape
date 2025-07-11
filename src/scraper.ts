@@ -87,17 +87,6 @@ export class Scraper {
     return element as T
   })
 
-  getMeta = (name: string) => Effect.gen(this, function* () {
-    return (yield* this.$(`meta[name=${name}]`))?.getAttribute('content')
-  })
-
-  getOg = (property: string) => Effect.gen(this, function* () {
-    const el = yield* this.$(`meta[property=og:${property}]`)
-    return el?.getAttribute('content')
-  })
-
-  getTwitter = (name: string) => this.getMeta(`twitter:${name}`)
-
   getOembed = () => Effect.gen(this, function* () {
     const oembedUrl = (yield* this.$<HTMLLinkElement>('link[rel="alternate"][type="application/json+oembed"]'))?.getAttribute('href')
 
