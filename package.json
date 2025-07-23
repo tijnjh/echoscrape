@@ -4,7 +4,7 @@
   "license": "AGPL-3.0-only",
   "module": "src/index.ts",
   "scripts": {
-    "dev": "bun run --watch src/index.ts"
+    "start": "bun run --watch src/index.ts"
   },
   "peerDependencies": {
     "typescript": "^5.8.3"
