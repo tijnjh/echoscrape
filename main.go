@@ -70,6 +70,7 @@ func main() {
 			"oembed": oembed,
 		}
 
+		utils.CleanNil(metadata)
 		return c.JSON(metadata)
 	})
 
