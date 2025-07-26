@@ -36,13 +36,15 @@ func main() {
 		favicon, err := s.GetFavicon()
 
 		if err != nil {
-			return err
+			fmt.Printf("Failed to get favicon: %v\n", err)
+			favicon = nil
 		}
 
 		oembed, err := s.GetOembed()
 
 		if err != nil {
-			return err
+			fmt.Printf("Failed to get oembed: %v\n", err)
+			oembed = nil
 		}
 
 		var metadata = map[string]any{
