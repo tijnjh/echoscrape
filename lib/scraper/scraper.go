@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"bytes"
 	"echoscrape/lib/utils"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/valyala/fasthttp"
 )
 
 type Scraper struct {
@@ -21,13 +23,21 @@ func (s *Scraper) Init(url string) error {
 		return err
 	}
 
-	res, err := http.Get(validatedUrl.String())
+	client := &fasthttp.Client{
+		ReadBufferSize: 32 * 1024,
+	}
+	statusCode, body, err := client.Get(nil, validatedUrl.String())
+
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
-	root, err := goquery.NewDocumentFromReader(res.Body)
+	if statusCode != fasthttp.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", statusCode)
+	}
+
+	reader := bytes.NewReader(body)
+	root, err := goquery.NewDocumentFromReader(reader)
 	if err != nil {
 		return err
 	}
