@@ -26,9 +26,7 @@ func main() {
 
 		s := &scraper.Scraper{}
 
-		err := s.Init(path)
-
-		if err != nil {
+		if err := s.Init(path); err != nil {
 			return err
 		}
 
