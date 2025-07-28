@@ -1,8 +1,7 @@
-package scraper
+package main
 
 import (
 	"bytes"
-	"echoscrape/lib/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -79,7 +78,7 @@ func (s *Scraper) Q(selector string) *goquery.Selection {
 }
 
 func (s *Scraper) GetOembed() (map[string]any, error) {
-	var oembedUrl = utils.GetAttr(s.Q("link[rel='alternate'][type='application/json+oembed']"), "href")
+	var oembedUrl = GetAttr(s.Q("link[rel='alternate'][type='application/json+oembed']"), "href")
 
 	if oembedUrl != nil {
 		fmt.Println("Detected oembed")
@@ -110,14 +109,14 @@ func (s *Scraper) GetOembed() (map[string]any, error) {
 }
 
 func (s *Scraper) GetFavicon() (*string, error) {
-	var favicon = utils.GetAttr(s.Q("link[rel='icon']"), "href")
+	var favicon = GetAttr(s.Q("link[rel='icon']"), "href")
 
 	if favicon == nil || *favicon == "" {
-		favicon = utils.GetAttr(s.Q("link[rel='shortcut icon']"), "href")
+		favicon = GetAttr(s.Q("link[rel='shortcut icon']"), "href")
 
 	}
 	if favicon == nil || *favicon == "" {
-		favicon = utils.GetAttr(s.Q("link[rel='apple-touch-icon']"), "href")
+		favicon = GetAttr(s.Q("link[rel='apple-touch-icon']"), "href")
 	}
 
 	if favicon != nil {

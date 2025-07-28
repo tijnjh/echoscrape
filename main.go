@@ -1,8 +1,6 @@
 package main
 
 import (
-	"echoscrape/lib/scraper"
-	"echoscrape/lib/utils"
 	"fmt"
 	"strings"
 
@@ -27,7 +25,7 @@ func main() {
 	app.Get("/*", func(c *fiber.Ctx) error {
 		path := strings.TrimPrefix(c.Path(), "/")
 
-		s := &scraper.Scraper{}
+		s := &Scraper{}
 
 		if err := s.Init(path); err != nil {
 			return err
@@ -49,31 +47,31 @@ func main() {
 
 		var metadata = map[string]any{
 			"title":       s.Q("title").Text(),
-			"description": utils.GetAttr(s.Q("meta[name='description']"), "content"),
+			"description": GetAttr(s.Q("meta[name='description']"), "content"),
 			"favicon":     favicon,
-			"themeColor":  utils.GetAttr(s.Q("meta[name='theme-color']"), "content"),
+			"themeColor":  GetAttr(s.Q("meta[name='theme-color']"), "content"),
 			"og": map[string]any{
-				"title":       utils.GetAttr(s.Q("meta[property='og:title']"), "content"),
-				"description": utils.GetAttr(s.Q("meta[property='og:description']"), "content"),
-				"image":       utils.GetAttr(s.Q("meta[property='og:image']"), "content"),
-				"imageAlt":    utils.GetAttr(s.Q("meta[property='og:image:alt']"), "content"),
-				"imageWidth":  utils.GetAttr(s.Q("meta[property='og:image:width']"), "content"),
-				"imageHeight": utils.GetAttr(s.Q("meta[property='og:image:height']"), "content"),
-				"url":         utils.GetAttr(s.Q("meta[property='og:url']"), "content"),
-				"type":        utils.GetAttr(s.Q("meta[property='og:type']"), "content"),
-				"siteName":    utils.GetAttr(s.Q("meta[property='og:site_name']"), "content"),
+				"title":       GetAttr(s.Q("meta[property='og:title']"), "content"),
+				"description": GetAttr(s.Q("meta[property='og:description']"), "content"),
+				"image":       GetAttr(s.Q("meta[property='og:image']"), "content"),
+				"imageAlt":    GetAttr(s.Q("meta[property='og:image:alt']"), "content"),
+				"imageWidth":  GetAttr(s.Q("meta[property='og:image:width']"), "content"),
+				"imageHeight": GetAttr(s.Q("meta[property='og:image:height']"), "content"),
+				"url":         GetAttr(s.Q("meta[property='og:url']"), "content"),
+				"type":        GetAttr(s.Q("meta[property='og:type']"), "content"),
+				"siteName":    GetAttr(s.Q("meta[property='og:site_name']"), "content"),
 			},
 			"twitter": map[string]any{
-				"title":       utils.GetAttr(s.Q("meta[name='twitter:title']"), "content"),
-				"description": utils.GetAttr(s.Q("meta[name='twitter:description']"), "content"),
-				"image":       utils.GetAttr(s.Q("meta[name='twitter:image']"), "content"),
-				"site":        utils.GetAttr(s.Q("meta[name='twitter:site']"), "content"),
-				"card":        utils.GetAttr(s.Q("meta[name='twitter:card']"), "content"),
+				"title":       GetAttr(s.Q("meta[name='twitter:title']"), "content"),
+				"description": GetAttr(s.Q("meta[name='twitter:description']"), "content"),
+				"image":       GetAttr(s.Q("meta[name='twitter:image']"), "content"),
+				"site":        GetAttr(s.Q("meta[name='twitter:site']"), "content"),
+				"card":        GetAttr(s.Q("meta[name='twitter:card']"), "content"),
 			},
 			"oembed": oembed,
 		}
 
-		utils.CleanNil(metadata)
+		CleanNil(metadata)
 		return c.JSON(metadata)
 	})
 
