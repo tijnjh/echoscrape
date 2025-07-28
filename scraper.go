@@ -16,15 +16,15 @@ type Scraper struct {
 	root *goquery.Document
 }
 
-func (s *Scraper) Init(url string) error {
-	validatedUrl, err := s.validateUrl(url)
+func (scraper *Scraper) Init(url string) error {
+	validatedUrl, err := scraper.validateUrl(url)
+
 	if err != nil {
 		return err
 	}
 
-	client := &fasthttp.Client{
-		ReadBufferSize: 32 * 1024,
-	}
+	client := &fasthttp.Client{ReadBufferSize: 32 * 1024}
+
 	statusCode, body, err := client.Get(nil, validatedUrl.String())
 
 	if err != nil {
@@ -36,18 +36,20 @@ func (s *Scraper) Init(url string) error {
 	}
 
 	reader := bytes.NewReader(body)
+
 	root, err := goquery.NewDocumentFromReader(reader)
+
 	if err != nil {
 		return err
 	}
 
-	s.url = validatedUrl
-	s.root = root
+	scraper.url = validatedUrl
+	scraper.root = root
 
 	return nil
 }
 
-func (s *Scraper) validateUrl(rawUrl string) (*url.URL, error) {
+func (scraper *Scraper) validateUrl(rawUrl string) (*url.URL, error) {
 	parsedURL, err := url.Parse(rawUrl)
 
 	if err != nil {
@@ -65,8 +67,8 @@ func (s *Scraper) validateUrl(rawUrl string) (*url.URL, error) {
 	return parsedURL, nil
 }
 
-func (s *Scraper) Q(selector string) *goquery.Selection {
-	element := s.root.Find(selector).First()
+func (scraper *Scraper) QuerySelector(selector string) *goquery.Selection {
+	element := scraper.root.Find(selector).First()
 
 	if element.Length() == 0 {
 		fmt.Printf("%s: No element found\n", selector)
@@ -77,8 +79,8 @@ func (s *Scraper) Q(selector string) *goquery.Selection {
 	return element
 }
 
-func (s *Scraper) GetOembed() (map[string]any, error) {
-	var oembedUrl = GetAttr(s.Q("link[rel='alternate'][type='application/json+oembed']"), "href")
+func (scraper *Scraper) GetOembed() (map[string]any, error) {
+	var oembedUrl = GetAttr(scraper.QuerySelector("link[rel='alternate'][type='application/json+oembed']"), "href")
 
 	if oembedUrl != nil {
 		fmt.Println("Detected oembed")
@@ -108,15 +110,15 @@ func (s *Scraper) GetOembed() (map[string]any, error) {
 
 }
 
-func (s *Scraper) GetFavicon() (*string, error) {
-	var favicon = GetAttr(s.Q("link[rel='icon']"), "href")
+func (scraper *Scraper) GetFavicon() (*string, error) {
+	var favicon = GetAttr(scraper.QuerySelector("link[rel='icon']"), "href")
 
 	if favicon == nil || *favicon == "" {
-		favicon = GetAttr(s.Q("link[rel='shortcut icon']"), "href")
+		favicon = GetAttr(scraper.QuerySelector("link[rel='shortcut icon']"), "href")
 
 	}
 	if favicon == nil || *favicon == "" {
-		favicon = GetAttr(s.Q("link[rel='apple-touch-icon']"), "href")
+		favicon = GetAttr(scraper.QuerySelector("link[rel='apple-touch-icon']"), "href")
 	}
 
 	if favicon != nil {
@@ -124,7 +126,7 @@ func (s *Scraper) GetFavicon() (*string, error) {
 		return favicon, nil
 
 	} else {
-		faviconUrl, err := url.JoinPath(s.url.Path, "/favicon.ico")
+		faviconUrl, err := url.JoinPath(scraper.url.Path, "/favicon.ico")
 
 		if err != nil {
 			return nil, err
