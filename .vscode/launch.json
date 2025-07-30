@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:echoscrape}",
+            "name": "Debug echoscrape",
+            "program": "${workspaceFolder:echoscrape}/.build/debug/echoscrape",
+            "preLaunchTask": "swift: Build Debug echoscrape"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:echoscrape}",
+            "name": "Release echoscrape",
+            "program": "${workspaceFolder:echoscrape}/.build/release/echoscrape",
+            "preLaunchTask": "swift: Build Release echoscrape"
+        }
+    ]
+}
