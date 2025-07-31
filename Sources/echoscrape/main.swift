@@ -1,36 +1,5 @@
 import Vapor
 
-struct Metadata: Content {
-    let title: String?
-    let description: String?
-    let favicon: String?
-    let themeColor: String?
-
-    let og: Og
-    struct Og: Content {
-        let title: String?
-        let description: String?
-        let image: String?
-        let imageAlt: String?
-        let imageWidth: String?
-        let imageHeight: String?
-        let url: String?
-        let type: String?
-        let siteName: String?
-    }
-
-    let twitter: Twitter
-    struct Twitter: Content {
-        let title: String?
-        let description: String?
-        let image: String?
-        let site: String?
-        let card: String?
-    }
-
-    let oembed: [String: String]?
-}
-
 let app = try await Application.make(.detect())
 
 let cors = CORSMiddleware(
@@ -60,8 +29,13 @@ app.get("**") { req in
     let path = req.url.path.hasPrefix("/") ? String(req.url.path.dropFirst()) : req.url.path
     let scraper = try await Scraper(url: path)
 
-    let favicon = try? await scraper.getFavicon()
-    let oembed = try? await scraper.getOembed()
+    let (
+        favicon,
+        oembed
+    ) = try await (
+        scraper.getFavicon(),
+        scraper.getOembed()
+    )
 
     return Metadata(
         title: scraper.find("title", .text),

@@ -6,12 +6,13 @@ import PackageDescription
 let package = Package(
     name: "echoscrape",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v10_15)
     ],
     dependencies: [
         .package(url: "https://github.com/vapor/vapor.git", from: "4.115.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
+        .package(url: "https://github.com/onevcat/Rainbow", .upToNextMajor(from: "4.0.0")),
     ],
     targets: [
         .executableTarget(
@@ -20,7 +21,8 @@ let package = Package(
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
-                .product(name: "SwiftSoup", package: "SwiftSoup"),
+                "SwiftSoup",
+                "Rainbow",
             ],
             swiftSettings: [
                 .enableUpcomingFeature("ExistentialAny")

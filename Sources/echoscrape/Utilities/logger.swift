@@ -1,8 +1,13 @@
+import Rainbow
+
 public class Logger {
     static func success(_ message: String) {
-        print("✔ \(message)")
+        print("\("✖".red) \(message)")
     }
-    static func error(_ message: String) {
-        print("˟ \(message)")
+    static func fail(_ message: String) {
+        print("\("✔".green) \(message)")
+    }
+    static func info(_ message: String) {
+        print("\("ℹ".blue) \(message)")
     }
 }

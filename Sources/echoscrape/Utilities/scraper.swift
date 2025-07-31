@@ -52,7 +52,7 @@ public class Scraper {
             let elements = try root.select(selector)
 
             if elements.isEmpty() {
-                Logger.error("No elements found for selector '\(selector)'")
+                Logger.fail("No elements found for selector '\(selector)'")
                 return nil
             }
 
@@ -85,7 +85,7 @@ public class Scraper {
             return oembed
         }
 
-        print("Website doesn't seem to have oEmbed, skipping...")
+        Logger.info("Website doesn't seem to have oEmbed, skipping...")
         return nil
     }
 
@@ -104,7 +104,7 @@ public class Scraper {
             let (_, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200
             else {
-                Logger.error("No favicon found.")
+                Logger.fail("No favicon found.")
                 return nil
             }
 
@@ -113,7 +113,7 @@ public class Scraper {
             return faviconUrl
         }
 
-        print("Favicon found in HTML → \(favicon)")
+        Logger.success("Favicon found in HTML → \(favicon)")
         return favicon
     }
 }
