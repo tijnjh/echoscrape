@@ -1,32 +1,34 @@
 import Vapor
 
-struct ES_Reponse: Content {
-    var title: String?
-    var description: String?
-    var themeColor: String?
-    var og: ES_Og
-    var twitter: ES_Twitter
-    var oembed: [String: String]?
-}
+struct Metadata: Content {
+    let title: String?
+    let description: String?
+    let favicon: String?
+    let themeColor: String?
 
-struct ES_Og: Content {
-    var title: String?
-    var description: String?
-    var image: String?
-    var imageAlt: String?
-    var imageWidth: String?
-    var imageHeight: String?
-    var url: String?
-    var type: String?
-    var siteName: String?
-}
+    let og: Og
+    struct Og: Content {
+        let title: String?
+        let description: String?
+        let image: String?
+        let imageAlt: String?
+        let imageWidth: String?
+        let imageHeight: String?
+        let url: String?
+        let type: String?
+        let siteName: String?
+    }
 
-struct ES_Twitter: Content {
-    var title: String?
-    var description: String?
-    var image: String?
-    var site: String?
-    var card: String?
+    let twitter: Twitter
+    struct Twitter: Content {
+        let title: String?
+        let description: String?
+        let image: String?
+        let site: String?
+        let card: String?
+    }
+
+    let oembed: [String: String]?
 }
 
 @main
@@ -61,13 +63,15 @@ class Echoscrape {
             let path = req.url.path.hasPrefix("/") ? String(req.url.path.dropFirst()) : req.url.path
             let scraper = try await Scraper(url: path)
 
+            let favicon = try? await scraper.getFavicon()
             let oembed = try? await scraper.getOembed()
 
-            return ES_Reponse(
+            return Metadata(
                 title: scraper.find("title", .text),
                 description: scraper.find("meta[name='description']", .attr("content")),
+                favicon: favicon,
                 themeColor: scraper.find("meta[name='theme-color']", .attr("content")),
-                og: ES_Og(
+                og: Metadata.Og(
                     title: scraper.find("meta[property='og:title']", .attr("content")),
                     description: scraper.find("meta[property='og:description']", .attr("content")),
                     image: scraper.find("meta[property='og:image']", .attr("content")),
@@ -78,7 +82,7 @@ class Echoscrape {
                     type: scraper.find("meta[property='og:type']", .attr("content")),
                     siteName: scraper.find("meta[property='og:site_name']", .attr("content")),
                 ),
-                twitter: ES_Twitter(
+                twitter: Metadata.Twitter(
                     title: scraper.find("meta[name='twitter:title']", .attr("content")),
                     description: scraper.find("meta[name='twitter:description']", .attr("content")),
                     image: scraper.find("meta[name='twitter:image']", .attr("content")),
@@ -87,8 +91,9 @@ class Echoscrape {
                 ),
                 oembed: oembed
             )
-
         }
+
+        app.get("favicon.ico") { req -> [String: String] in [:] }
 
         try await app.execute()
     }

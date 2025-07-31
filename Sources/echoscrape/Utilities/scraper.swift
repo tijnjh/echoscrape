@@ -52,10 +52,11 @@ public class Scraper {
             let elements = try root.select(selector)
 
             if elements.isEmpty() {
-                print("No elements found for selector \(selector)")
+                Logger.error("No elements found for selector '\(selector)'")
+                return nil
             }
 
-            print("Found element for selector \(selector)")
+            Logger.success("Found element for selector '\(selector)'")
 
             let element = elements.first()
 
@@ -73,7 +74,7 @@ public class Scraper {
         let oembedUrl = find("link[rel='alternate'][type='application/json+oembed']", .attr("href"))
 
         if oembedUrl != nil {
-            print("Detected oembed")
+            Logger.success("Detected oembed")
 
             guard let oembedURL = URL(string: oembedUrl!) else {
                 return nil
@@ -86,5 +87,33 @@ public class Scraper {
 
         print("Website doesn't seem to have oEmbed, skipping...")
         return nil
+    }
+
+    func getFavicon() async throws -> String? {
+        guard
+            let favicon =
+                self.find("link[rel='icon']", .attr("href"))
+                ?? self.find("link[rel='shortcut icon']", .attr("href"))
+                ?? self.find("link[rel='apple-touch-icon']", .attr("href"))
+        else {
+            let faviconUrl = "\(self.url)/favicon.ico"
+
+            var request = URLRequest(url: URL(string: faviconUrl)!)
+
+            request.httpMethod = "HEAD"
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200
+            else {
+                Logger.error("No favicon found.")
+                return nil
+            }
+
+            Logger.success("Fetched /favicon.ico")
+
+            return faviconUrl
+        }
+
+        print("Favicon found in HTML → \(favicon)")
+        return favicon
     }
 }
