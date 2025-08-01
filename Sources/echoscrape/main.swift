@@ -2,6 +2,8 @@ import Vapor
 
 let app = try await Application.make(.detect())
 
+let cache = Cache()
+
 let cors = CORSMiddleware(
     configuration: CORSMiddleware.Configuration(
         allowedOrigin: .all,
@@ -27,6 +29,7 @@ app.get("") { req in
 
 app.get("**") { req in
     let path = req.url.path.hasPrefix("/") ? String(req.url.path.dropFirst()) : req.url.path
+
     let scraper = try await Scraper(url: path)
 
     let (favicon, oembed) = try await (

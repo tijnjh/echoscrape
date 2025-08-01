@@ -6,8 +6,11 @@ class Scraper {
     var root: Document
 
     init(url: String) async throws {
-        self.url = try Self.validateUrl(rawUrl: url)
-        let (data, _) = try await URLSession.shared.data(from: self.url)
+        let validUrl = try Self.validateUrl(rawUrl: url)
+        self.url = validUrl
+        let (data, _) = try await cache.tryCache(key: url) {
+            try await URLSession.shared.data(from: validUrl)
+        }
         self.root = try SwiftSoup.parse(String(data: data, encoding: .utf8)!)
     }
 
@@ -80,7 +83,10 @@ class Scraper {
                 return nil
             }
 
-            let (data, _) = try await URLSession.shared.data(from: oembedURL)
+            let (data, _) = try await cache.tryCache(key: "\(self.url)-oembed") {
+                try await URLSession.shared.data(from: oembedURL)
+            }
+
             let oembed = try JSONSerialization.jsonObject(with: data) as! [String: String]
             return oembed
         }
@@ -101,7 +107,10 @@ class Scraper {
             var request = URLRequest(url: URL(string: faviconUrl)!)
 
             request.httpMethod = "HEAD"
-            let (_, response) = try await URLSession.shared.data(for: request)
+
+            let (_, response) = try await cache.tryCache(key: "\(self.url)-favicon") {
+                try await URLSession.shared.data(for: request)
+            }
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200
             else {
                 Logger.fail("No favicon found.")
