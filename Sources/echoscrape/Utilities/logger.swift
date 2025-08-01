@@ -1,6 +1,6 @@
 import Rainbow
 
-public class Logger {
+class Logger {
     static func success(_ message: String) {
         print("\("✔".green) \(message)")
     }

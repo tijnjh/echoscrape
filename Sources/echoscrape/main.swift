@@ -19,7 +19,7 @@ let addr =
     "https://\(app.http.server.configuration.hostname):\(String(app.http.server.configuration.port))"
 
 app.get("") { req in
-    return [
+    [
         "instruction": "Go to \(addr)/example.com",
         "source": "https://github.com/tijnjh/echoscrape",
     ]
@@ -29,10 +29,7 @@ app.get("**") { req in
     let path = req.url.path.hasPrefix("/") ? String(req.url.path.dropFirst()) : req.url.path
     let scraper = try await Scraper(url: path)
 
-    let (
-        favicon,
-        oembed
-    ) = try await (
+    let (favicon, oembed) = try await (
         scraper.getFavicon(),
         scraper.getOembed()
     )

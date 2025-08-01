@@ -5,8 +5,10 @@ struct Metadata: Content {
     let description: String?
     let favicon: String?
     let themeColor: String?
-
     let og: Og
+    let twitter: Twitter
+    let oembed: [String: String]?
+
     struct Og: Content {
         let title: String?
         let description: String?
@@ -19,7 +21,6 @@ struct Metadata: Content {
         let siteName: String?
     }
 
-    let twitter: Twitter
     struct Twitter: Content {
         let title: String?
         let description: String?
@@ -27,6 +28,4 @@ struct Metadata: Content {
         let site: String?
         let card: String?
     }
-
-    let oembed: [String: String]?
 }

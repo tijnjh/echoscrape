@@ -1,7 +1,7 @@
 import SwiftSoup
 import Vapor
 
-public class Scraper {
+class Scraper {
     var url: URL
     var root: Document
 
