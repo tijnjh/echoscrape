@@ -18,14 +18,29 @@ type Scraper struct {
 	root *goquery.Document
 }
 
-func (s *Scraper) Init(url string, client *fasthttp.Client) error {
-	validatedUrl, err := s.validateUrl(url)
+type Config struct {
+	Url        string
+	HttpClient *fasthttp.Client
+}
+
+func New(config Config) (*Scraper, error) {
+	s := &Scraper{}
+
+	if err := s.init(config); err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (s *Scraper) init(config Config) error {
+	validatedUrl, err := s.validateUrl(config.Url)
 
 	if err != nil {
 		return err
 	}
 
-	statusCode, body, err := client.Get(nil, validatedUrl.String())
+	statusCode, body, err := config.HttpClient.Get(nil, validatedUrl.String())
 
 	if err != nil {
 		return err

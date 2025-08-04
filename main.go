@@ -33,9 +33,12 @@ func main() {
 	app.Get("/*", func(c *fiber.Ctx) error {
 		path := strings.TrimPrefix(c.Path(), "/")
 
-		s := &scraper.Scraper{}
+		s, err := scraper.New(scraper.Config{
+			Url:        path,
+			HttpClient: httpClient,
+		})
 
-		if err := s.Init(path, httpClient); err != nil {
+		if err != nil {
 			return err
 		}
 
