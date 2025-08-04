@@ -1,4 +1,4 @@
-package main
+package lib
 
 import (
 	"bytes"
@@ -71,10 +71,10 @@ func (scraper *Scraper) Find(selector string) *Element {
 	element := scraper.root.Find(selector).First()
 
 	if element.Length() == 0 {
-		logFail(fmt.Sprintf("No elements found for selector '%s'", selector))
+		LogFail(fmt.Sprintf("No elements found for selector '%s'", selector))
 		element = nil
 	} else {
-		logSuccess(fmt.Sprintf("Found element for selector '%s'", selector))
+		LogSuccess(fmt.Sprintf("Found element for selector '%s'", selector))
 	}
 
 	return &Element{selection: element}
@@ -84,7 +84,7 @@ func (scraper *Scraper) GetOembed() (map[string]any, error) {
 	oembedUrl := scraper.Find("link[rel='alternate'][type='application/json+oembed']").Attr("href")
 
 	if oembedUrl != nil {
-		logSuccess("Detected oembed")
+		LogSuccess("Detected oembed")
 
 		res, err := http.Get(*oembedUrl)
 
@@ -105,7 +105,7 @@ func (scraper *Scraper) GetOembed() (map[string]any, error) {
 		return oembedMap, nil
 
 	} else {
-		logInfo("Website doesn't seem to have oEmbed, skipping...")
+		LogInfo("Website doesn't seem to have oEmbed, skipping...")
 		return nil, nil
 	}
 
@@ -123,7 +123,7 @@ func (scraper *Scraper) GetFavicon() (*string, error) {
 	}
 
 	if favicon != nil {
-		logSuccess(fmt.Sprintf("Favicon found in HTML → %s", *favicon))
+		LogSuccess(fmt.Sprintf("Favicon found in HTML → %s", *favicon))
 		return favicon, nil
 
 	} else {
@@ -140,11 +140,11 @@ func (scraper *Scraper) GetFavicon() (*string, error) {
 		}
 
 		if res.StatusCode >= 200 && res.StatusCode < 300 {
-			logSuccess("Fetched /favicon.ico")
+			LogSuccess("Fetched /favicon.ico")
 			return &faviconUrl, nil
 		}
 
-		logFail("No favicon found.")
+		LogFail("No favicon found.")
 		return nil, nil
 
 	}

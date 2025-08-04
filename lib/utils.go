@@ -1,8 +1,8 @@
-package main
+package lib
 
 import "reflect"
 
-func cleanNil(m map[string]any) {
+func CleanNil(m map[string]any) {
 	for k, v := range m {
 		if v == nil {
 			delete(m, k)
@@ -16,7 +16,7 @@ func cleanNil(m map[string]any) {
 			}
 		}
 		if subMap, ok := v.(map[string]any); ok {
-			cleanNil(subMap)
+			CleanNil(subMap)
 			if len(subMap) == 0 {
 				delete(m, k)
 			}
