@@ -8,7 +8,10 @@ require (
 	golang.org/x/net v0.42.0 // indirect
 )
 
-require github.com/valyala/fasthttp v1.51.0
+require (
+	github.com/fatih/color v1.18.0
+	github.com/valyala/fasthttp v1.51.0
+)
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect

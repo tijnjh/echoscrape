@@ -67,23 +67,24 @@ func (scraper *Scraper) validateUrl(rawUrl string) (*url.URL, error) {
 	return parsedURL, nil
 }
 
-func (scraper *Scraper) QuerySelector(selector string) *goquery.Selection {
+func (scraper *Scraper) Find(selector string) *Element {
 	element := scraper.root.Find(selector).First()
 
 	if element.Length() == 0 {
-		fmt.Printf("%s: No element found\n", selector)
+		logFail(fmt.Sprintf("No elements found for selector '%s'", selector))
+		element = nil
 	} else {
-		fmt.Printf("%s: Found element\n", selector)
+		logSuccess(fmt.Sprintf("Found element for selector '%s'", selector))
 	}
 
-	return element
+	return &Element{selection: element}
 }
 
 func (scraper *Scraper) GetOembed() (map[string]any, error) {
-	var oembedUrl = GetAttr(scraper.QuerySelector("link[rel='alternate'][type='application/json+oembed']"), "href")
+	oembedUrl := scraper.Find("link[rel='alternate'][type='application/json+oembed']").Attr("href")
 
 	if oembedUrl != nil {
-		fmt.Println("Detected oembed")
+		logSuccess("Detected oembed")
 
 		res, err := http.Get(*oembedUrl)
 
@@ -104,25 +105,25 @@ func (scraper *Scraper) GetOembed() (map[string]any, error) {
 		return oembedMap, nil
 
 	} else {
-		fmt.Println("Website doesn't seem to have oEmbed, skipping...")
+		logInfo("Website doesn't seem to have oEmbed, skipping...")
 		return nil, nil
 	}
 
 }
 
 func (scraper *Scraper) GetFavicon() (*string, error) {
-	var favicon = GetAttr(scraper.QuerySelector("link[rel='icon']"), "href")
+	favicon := scraper.Find("link[rel='icon']").Attr("href")
 
 	if favicon == nil || *favicon == "" {
-		favicon = GetAttr(scraper.QuerySelector("link[rel='shortcut icon']"), "href")
+		favicon = scraper.Find("link[rel='shortcut icon']").Attr("href")
 
 	}
 	if favicon == nil || *favicon == "" {
-		favicon = GetAttr(scraper.QuerySelector("link[rel='apple-touch-icon']"), "href")
+		favicon = scraper.Find("link[rel='apple-touch-icon']").Attr("href")
 	}
 
 	if favicon != nil {
-		fmt.Printf("Favicon found in HTML → %s\n", *favicon)
+		logSuccess(fmt.Sprintf("Favicon found in HTML → %s", *favicon))
 		return favicon, nil
 
 	} else {
@@ -139,12 +140,12 @@ func (scraper *Scraper) GetFavicon() (*string, error) {
 		}
 
 		if res.StatusCode >= 200 && res.StatusCode < 300 {
-			fmt.Println("Fetched /favicon.ico")
+			logSuccess("Fetched /favicon.ico")
 			return &faviconUrl, nil
-		} else {
-			fmt.Println("No favicon found.")
-			return nil, nil
 		}
+
+		logFail("No favicon found.")
+		return nil, nil
 
 	}
 }
