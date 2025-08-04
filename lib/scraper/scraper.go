@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"bytes"
+	"echoscrape/lib/cache"
 	"echoscrape/lib/element"
 	"echoscrape/lib/logger"
 	"encoding/json"
@@ -21,6 +22,7 @@ type Scraper struct {
 type Config struct {
 	Url        string
 	HttpClient *fasthttp.Client
+	Cache      *cache.Cache
 }
 
 func New(config Config) (*Scraper, error) {
@@ -34,20 +36,20 @@ func New(config Config) (*Scraper, error) {
 }
 
 func (s *Scraper) init(config Config) error {
-	validatedUrl, err := s.validateUrl(config.Url)
+	validUrl, err := s.validateUrl(config.Url)
 
 	if err != nil {
 		return err
 	}
 
-	statusCode, body, err := config.HttpClient.Get(nil, validatedUrl.String())
+	status, body, err := config.HttpClient.Get(nil, validUrl.String())
 
 	if err != nil {
 		return err
 	}
 
-	if statusCode != fasthttp.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", statusCode)
+	if status != fasthttp.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", status)
 	}
 
 	reader := bytes.NewReader(body)
@@ -58,7 +60,7 @@ func (s *Scraper) init(config Config) error {
 		return err
 	}
 
-	s.url = validatedUrl
+	s.url = validUrl
 	s.root = root
 
 	return nil
