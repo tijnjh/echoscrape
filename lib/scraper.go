@@ -16,14 +16,12 @@ type Scraper struct {
 	root *goquery.Document
 }
 
-func (scraper *Scraper) Init(url string) error {
+func (scraper *Scraper) Init(url string, client *fasthttp.Client) error {
 	validatedUrl, err := scraper.validateUrl(url)
 
 	if err != nil {
 		return err
 	}
-
-	client := &fasthttp.Client{ReadBufferSize: 32 * 1024}
 
 	statusCode, body, err := client.Get(nil, validatedUrl.String())
 

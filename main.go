@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/valyala/fasthttp"
 )
 
 func main() {
@@ -15,12 +16,14 @@ func main() {
 	app.Use(cors.New())
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
+		err := c.JSON(fiber.Map{
 			"instruction": fmt.Sprintf("Go to %s{your-url}", c.OriginalURL()),
 			"echoscrape": fiber.Map{
 				"source": "https://github.com/tijnjh/echoscrape",
 			},
 		})
+
+		return err
 	})
 
 	app.Get("/*", func(c *fiber.Ctx) error {
@@ -28,7 +31,7 @@ func main() {
 
 		scraper := &lib.Scraper{}
 
-		if err := scraper.Init(path); err != nil {
+		if err := scraper.Init(path, &fasthttp.Client{ReadBufferSize: 32 * 1024}); err != nil {
 			return err
 		}
 
