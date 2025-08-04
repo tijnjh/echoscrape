@@ -1,17 +1,17 @@
-package lib
+package element
 
 import "github.com/PuerkitoBio/goquery"
 
 type Element struct {
-	selection *goquery.Selection
+	Selection *goquery.Selection
 }
 
 func (element *Element) Text() *string {
-	if element == nil || element.selection == nil {
+	if element == nil || element.Selection == nil {
 		return nil
 	}
 
-	text := element.selection.Text()
+	text := element.Selection.Text()
 
 	if text == "" {
 		return nil
@@ -21,11 +21,11 @@ func (element *Element) Text() *string {
 }
 
 func (element *Element) Attr(name string) *string {
-	if element == nil || element.selection == nil {
+	if element == nil || element.Selection == nil {
 		return nil
 	}
 
-	val, exists := element.selection.Attr(name)
+	val, exists := element.Selection.Attr(name)
 
 	if !exists {
 		return nil

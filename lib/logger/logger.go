@@ -1,4 +1,4 @@
-package lib
+package logger
 
 import (
 	"fmt"
@@ -6,17 +6,17 @@ import (
 	"github.com/fatih/color"
 )
 
-func LogSuccess(message string) {
+func Success(message string) {
 	green := color.New(color.FgGreen)
 	fmt.Printf("%s %s\n", green.Sprint("✔"), message)
 }
 
-func LogFail(message string) {
+func Fail(message string) {
 	red := color.New(color.FgRed)
 	fmt.Printf("%s %s\n", red.Sprint("✖"), message)
 }
 
-func LogInfo(message string) {
+func Info(message string) {
 	blue := color.New(color.FgBlue)
 	fmt.Printf("%s %s\n", blue.Sprint("ℹ"), message)
 }

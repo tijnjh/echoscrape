@@ -1,7 +1,9 @@
-package lib
+package scraper
 
 import (
 	"bytes"
+	"echoscrape/lib/element"
+	"echoscrape/lib/logger"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -65,24 +67,24 @@ func (scraper *Scraper) validateUrl(rawUrl string) (*url.URL, error) {
 	return parsedURL, nil
 }
 
-func (scraper *Scraper) Find(selector string) *Element {
-	element := scraper.root.Find(selector).First()
+func (scraper *Scraper) Find(selector string) *element.Element {
+	elt := scraper.root.Find(selector).First()
 
-	if element.Length() == 0 {
-		LogFail(fmt.Sprintf("No elements found for selector '%s'", selector))
-		element = nil
+	if elt.Length() == 0 {
+		logger.Fail(fmt.Sprintf("No elements found for selector '%s'", selector))
+		elt = nil
 	} else {
-		LogSuccess(fmt.Sprintf("Found element for selector '%s'", selector))
+		logger.Success(fmt.Sprintf("Found element for selector '%s'", selector))
 	}
 
-	return &Element{selection: element}
+	return &element.Element{Selection: elt}
 }
 
 func (scraper *Scraper) GetOembed() (map[string]any, error) {
 	oembedUrl := scraper.Find("link[rel='alternate'][type='application/json+oembed']").Attr("href")
 
 	if oembedUrl != nil {
-		LogSuccess("Detected oembed")
+		logger.Success("Detected oembed")
 
 		res, err := http.Get(*oembedUrl)
 
@@ -103,7 +105,7 @@ func (scraper *Scraper) GetOembed() (map[string]any, error) {
 		return oembedMap, nil
 
 	} else {
-		LogInfo("Website doesn't seem to have oEmbed, skipping...")
+		logger.Info("Website doesn't seem to have oEmbed, skipping...")
 		return nil, nil
 	}
 
@@ -121,7 +123,7 @@ func (scraper *Scraper) GetFavicon() (*string, error) {
 	}
 
 	if favicon != nil {
-		LogSuccess(fmt.Sprintf("Favicon found in HTML → %s", *favicon))
+		logger.Success(fmt.Sprintf("Favicon found in HTML → %s", *favicon))
 		return favicon, nil
 
 	} else {
@@ -138,11 +140,11 @@ func (scraper *Scraper) GetFavicon() (*string, error) {
 		}
 
 		if res.StatusCode >= 200 && res.StatusCode < 300 {
-			LogSuccess("Fetched /favicon.ico")
+			logger.Success("Fetched /favicon.ico")
 			return &faviconUrl, nil
 		}
 
-		LogFail("No favicon found.")
+		logger.Fail("No favicon found.")
 		return nil, nil
 
 	}

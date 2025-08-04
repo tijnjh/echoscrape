@@ -1,7 +1,9 @@
 package main
 
 import (
-	"echoscrape/lib"
+	"echoscrape/lib/logger"
+	"echoscrape/lib/scraper"
+	"echoscrape/lib/utils"
 	"fmt"
 	"strings"
 
@@ -29,7 +31,7 @@ func main() {
 	app.Get("/*", func(c *fiber.Ctx) error {
 		path := strings.TrimPrefix(c.Path(), "/")
 
-		scraper := &lib.Scraper{}
+		scraper := &scraper.Scraper{}
 
 		if err := scraper.Init(path, &fasthttp.Client{ReadBufferSize: 32 * 1024}); err != nil {
 			return err
@@ -38,14 +40,14 @@ func main() {
 		favicon, err := scraper.GetFavicon()
 
 		if err != nil {
-			lib.LogFail(fmt.Sprintf("Failed to get favicon: %v", err))
+			logger.Fail(fmt.Sprintf("Failed to get favicon: %v", err))
 			favicon = nil
 		}
 
 		oembed, err := scraper.GetOembed()
 
 		if err != nil {
-			lib.LogFail(fmt.Sprintf("Failed to get oembed: %v", err))
+			logger.Fail(fmt.Sprintf("Failed to get oembed: %v", err))
 			oembed = nil
 		}
 
@@ -75,7 +77,7 @@ func main() {
 			"oembed": oembed,
 		}
 
-		lib.CleanNil(metadata)
+		utils.CleanNil(metadata)
 		return c.JSON(metadata)
 	})
 
