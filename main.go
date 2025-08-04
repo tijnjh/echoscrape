@@ -15,6 +15,8 @@ import (
 func main() {
 	app := fiber.New()
 
+	httpClient := &fasthttp.Client{ReadBufferSize: 32 * 1024}
+
 	app.Use(cors.New())
 
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -31,20 +33,20 @@ func main() {
 	app.Get("/*", func(c *fiber.Ctx) error {
 		path := strings.TrimPrefix(c.Path(), "/")
 
-		scraper := &scraper.Scraper{}
+		s := &scraper.Scraper{}
 
-		if err := scraper.Init(path, &fasthttp.Client{ReadBufferSize: 32 * 1024}); err != nil {
+		if err := s.Init(path, httpClient); err != nil {
 			return err
 		}
 
-		favicon, err := scraper.GetFavicon()
+		favicon, err := s.GetFavicon()
 
 		if err != nil {
 			logger.Fail(fmt.Sprintf("Failed to get favicon: %v", err))
 			favicon = nil
 		}
 
-		oembed, err := scraper.GetOembed()
+		oembed, err := s.GetOembed()
 
 		if err != nil {
 			logger.Fail(fmt.Sprintf("Failed to get oembed: %v", err))
@@ -52,27 +54,27 @@ func main() {
 		}
 
 		metadata := map[string]any{
-			"title":       scraper.Find("title").Text(),
-			"description": scraper.Find("meta[name='description']").Attr("content"),
+			"title":       s.Find("title").Text(),
+			"description": s.Find("meta[name='description']").Attr("content"),
 			"favicon":     favicon,
-			"themeColor":  scraper.Find("meta[name='theme-color']").Attr("content"),
+			"themeColor":  s.Find("meta[name='theme-color']").Attr("content"),
 			"og": map[string]any{
-				"title":       scraper.Find("meta[property='og:title']").Attr("content"),
-				"description": scraper.Find("meta[property='og:description']").Attr("content"),
-				"image":       scraper.Find("meta[property='og:image']").Attr("content"),
-				"imageAlt":    scraper.Find("meta[property='og:image:alt']").Attr("content"),
-				"imageWidth":  scraper.Find("meta[property='og:image:width']").Attr("content"),
-				"imageHeight": scraper.Find("meta[property='og:image:height']").Attr("content"),
-				"url":         scraper.Find("meta[property='og:url']").Attr("content"),
-				"type":        scraper.Find("meta[property='og:type']").Attr("content"),
-				"siteName":    scraper.Find("meta[property='og:site_name']").Attr("content"),
+				"title":       s.Find("meta[property='og:title']").Attr("content"),
+				"description": s.Find("meta[property='og:description']").Attr("content"),
+				"image":       s.Find("meta[property='og:image']").Attr("content"),
+				"imageAlt":    s.Find("meta[property='og:image:alt']").Attr("content"),
+				"imageWidth":  s.Find("meta[property='og:image:width']").Attr("content"),
+				"imageHeight": s.Find("meta[property='og:image:height']").Attr("content"),
+				"url":         s.Find("meta[property='og:url']").Attr("content"),
+				"type":        s.Find("meta[property='og:type']").Attr("content"),
+				"siteName":    s.Find("meta[property='og:site_name']").Attr("content"),
 			},
 			"twitter": map[string]any{
-				"title":       scraper.Find("meta[name='twitter:title']").Attr("content"),
-				"description": scraper.Find("meta[name='twitter:description']").Attr("content"),
-				"image":       scraper.Find("meta[name='twitter:image']").Attr("content"),
-				"site":        scraper.Find("meta[name='twitter:site']").Attr("content"),
-				"card":        scraper.Find("meta[name='twitter:card']").Attr("content"),
+				"title":       s.Find("meta[name='twitter:title']").Attr("content"),
+				"description": s.Find("meta[name='twitter:description']").Attr("content"),
+				"image":       s.Find("meta[name='twitter:image']").Attr("content"),
+				"site":        s.Find("meta[name='twitter:site']").Attr("content"),
+				"card":        s.Find("meta[name='twitter:card']").Attr("content"),
 			},
 			"oembed": oembed,
 		}

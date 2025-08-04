@@ -6,12 +6,12 @@ type Element struct {
 	Selection *goquery.Selection
 }
 
-func (element *Element) Text() *string {
-	if element == nil || element.Selection == nil {
+func (e *Element) Text() *string {
+	if e == nil || e.Selection == nil {
 		return nil
 	}
 
-	text := element.Selection.Text()
+	text := e.Selection.Text()
 
 	if text == "" {
 		return nil
@@ -20,12 +20,12 @@ func (element *Element) Text() *string {
 	return &text
 }
 
-func (element *Element) Attr(name string) *string {
-	if element == nil || element.Selection == nil {
+func (e *Element) Attr(name string) *string {
+	if e == nil || e.Selection == nil {
 		return nil
 	}
 
-	val, exists := element.Selection.Attr(name)
+	val, exists := e.Selection.Attr(name)
 
 	if !exists {
 		return nil

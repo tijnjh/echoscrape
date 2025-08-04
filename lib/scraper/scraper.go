@@ -18,8 +18,8 @@ type Scraper struct {
 	root *goquery.Document
 }
 
-func (scraper *Scraper) Init(url string, client *fasthttp.Client) error {
-	validatedUrl, err := scraper.validateUrl(url)
+func (s *Scraper) Init(url string, client *fasthttp.Client) error {
+	validatedUrl, err := s.validateUrl(url)
 
 	if err != nil {
 		return err
@@ -43,13 +43,13 @@ func (scraper *Scraper) Init(url string, client *fasthttp.Client) error {
 		return err
 	}
 
-	scraper.url = validatedUrl
-	scraper.root = root
+	s.url = validatedUrl
+	s.root = root
 
 	return nil
 }
 
-func (scraper *Scraper) validateUrl(rawUrl string) (*url.URL, error) {
+func (s *Scraper) validateUrl(rawUrl string) (*url.URL, error) {
 	parsedURL, err := url.Parse(rawUrl)
 
 	if err != nil {
@@ -67,8 +67,8 @@ func (scraper *Scraper) validateUrl(rawUrl string) (*url.URL, error) {
 	return parsedURL, nil
 }
 
-func (scraper *Scraper) Find(selector string) *element.Element {
-	elt := scraper.root.Find(selector).First()
+func (s *Scraper) Find(selector string) *element.Element {
+	elt := s.root.Find(selector).First()
 
 	if elt.Length() == 0 {
 		logger.Fail(fmt.Sprintf("No elements found for selector '%s'", selector))
@@ -80,8 +80,8 @@ func (scraper *Scraper) Find(selector string) *element.Element {
 	return &element.Element{Selection: elt}
 }
 
-func (scraper *Scraper) GetOembed() (map[string]any, error) {
-	oembedUrl := scraper.Find("link[rel='alternate'][type='application/json+oembed']").Attr("href")
+func (s *Scraper) GetOembed() (map[string]any, error) {
+	oembedUrl := s.Find("link[rel='alternate'][type='application/json+oembed']").Attr("href")
 
 	if oembedUrl != nil {
 		logger.Success("Detected oembed")
@@ -111,15 +111,15 @@ func (scraper *Scraper) GetOembed() (map[string]any, error) {
 
 }
 
-func (scraper *Scraper) GetFavicon() (*string, error) {
-	favicon := scraper.Find("link[rel='icon']").Attr("href")
+func (s *Scraper) GetFavicon() (*string, error) {
+	favicon := s.Find("link[rel='icon']").Attr("href")
 
 	if favicon == nil || *favicon == "" {
-		favicon = scraper.Find("link[rel='shortcut icon']").Attr("href")
+		favicon = s.Find("link[rel='shortcut icon']").Attr("href")
 
 	}
 	if favicon == nil || *favicon == "" {
-		favicon = scraper.Find("link[rel='apple-touch-icon']").Attr("href")
+		favicon = s.Find("link[rel='apple-touch-icon']").Attr("href")
 	}
 
 	if favicon != nil {
@@ -127,7 +127,7 @@ func (scraper *Scraper) GetFavicon() (*string, error) {
 		return favicon, nil
 
 	} else {
-		faviconUrl, err := url.JoinPath(scraper.url.Path, "/favicon.ico")
+		faviconUrl, err := url.JoinPath(s.url.Path, "/favicon.ico")
 
 		if err != nil {
 			return nil, err
