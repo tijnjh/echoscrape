@@ -1,53 +1,51 @@
 import SwiftSoup
 import Vapor
 
+enum URLParsingError: Error {
+    case invalidURL
+    case localhostNotAllowed
+}
+
+enum FindOption {
+    case text
+    case attr(String)
+}
+
+enum ElementFindingError: Error {
+    case notFound
+}
+
+func validateUrl(rawUrl: String) throws -> URL {
+    guard var urlComponents = URLComponents(string: rawUrl) else {
+        throw URLParsingError.invalidURL
+    }
+
+    if urlComponents.scheme == nil {
+        urlComponents.scheme = "http"
+    }
+
+    guard let parsedURL = urlComponents.url else {
+        throw URLParsingError.invalidURL
+    }
+
+    if let host = urlComponents.host {
+        if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+            throw URLParsingError.localhostNotAllowed
+        }
+    }
+
+    return parsedURL
+}
+
 class Scraper {
     var url: URL
     var root: Document
 
     init(url: String) async throws {
-        let validUrl = try Self.validateUrl(rawUrl: url)
+        let validUrl = try validateUrl(rawUrl: url)
         self.url = validUrl
-        let (data, _) = try await cache.tryCache(key: url) {
-            try await URLSession.shared.data(from: validUrl)
-        }
+        let (data, _) = try await URLSession.shared.data(from: validUrl)
         self.root = try SwiftSoup.parse(String(data: data, encoding: .utf8)!)
-    }
-
-    enum URLParsingError: Error {
-        case invalidURL
-        case localhostNotAllowed
-    }
-
-    private static func validateUrl(rawUrl: String) throws -> URL {
-        guard var urlComponents = URLComponents(string: rawUrl) else {
-            throw URLParsingError.invalidURL
-        }
-
-        if urlComponents.scheme == nil {
-            urlComponents.scheme = "http"
-        }
-
-        guard let parsedURL = urlComponents.url else {
-            throw URLParsingError.invalidURL
-        }
-
-        if let host = urlComponents.host {
-            if host == "localhost" || host == "127.0.0.1" || host == "::1" {
-                throw URLParsingError.localhostNotAllowed
-            }
-        }
-
-        return parsedURL
-    }
-
-    enum FindOption {
-        case text
-        case attr(String)
-    }
-
-    enum ElementFindingError: Error {
-        case notFound
     }
 
     func find(_ selector: String, _ get: FindOption) -> String? {
@@ -83,9 +81,7 @@ class Scraper {
                 return nil
             }
 
-            let (data, _) = try await cache.tryCache(key: "\(self.url)-oembed") {
-                try await URLSession.shared.data(from: oembedURL)
-            }
+            let (data, _) = try await URLSession.shared.data(from: oembedURL)
 
             let oembed = try JSONSerialization.jsonObject(with: data) as! [String: String]
             return oembed
@@ -108,9 +104,8 @@ class Scraper {
 
             request.httpMethod = "HEAD"
 
-            let (_, response) = try await cache.tryCache(key: "\(self.url)-favicon") {
-                try await URLSession.shared.data(for: request)
-            }
+            let (_, response) = try await URLSession.shared.data(for: request)
+
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200
             else {
                 Logger.fail("No favicon found.")

@@ -1,18 +1,18 @@
 actor Cache {
     private var cache: [String: Any] = [:]
 
-    func tryCache<T>(key: String, callback: () async throws -> T) async throws -> T {
-        if let cached = cache[key] as? T {
-            Logger.success("Cache hit for '\(key)'. Returning cached data.")
-            return cached
+    func get<T>(key: String) -> T? {
+        guard let item = cache[key] else {
+            Logger.fail("(cache) Cache miss for '\(key)'...")
+            return nil
         }
 
-        Logger.info("Cache miss for '\(key)'. Fetching data...")
+        Logger.success("(cache) Cache hit for '\(key)'. Returning cached data.")
+        return item as? T
+    }
 
-        let data = try await callback()
-        cache[key] = data
-
-        Logger.success("Data cached for '\(key)'")
-        return data
+    func set(key: String, val: Any) {
+        self.cache[key] = val
+        Logger.success("(cache) Data cached for '\(key)'.")
     }
 }

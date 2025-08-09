@@ -30,38 +30,48 @@ app.get("") { req in
 app.get("**") { req in
     let path = req.url.path.hasPrefix("/") ? String(req.url.path.dropFirst()) : req.url.path
 
-    let scraper = try await Scraper(url: path)
+    let cacheKey = "metadata-\(path)"
 
-    let (favicon, oembed) = try await (
-        scraper.getFavicon(),
-        scraper.getOembed()
-    )
+    guard let cached: Metadata = await cache.get(key: cacheKey) else {
+        let scraper = try await Scraper(url: path)
 
-    return Metadata(
-        title: scraper.find("title", .text),
-        description: scraper.find("meta[name='description']", .attr("content")),
-        favicon: favicon,
-        themeColor: scraper.find("meta[name='theme-color']", .attr("content")),
-        og: Metadata.Og(
-            title: scraper.find("meta[property='og:title']", .attr("content")),
-            description: scraper.find("meta[property='og:description']", .attr("content")),
-            image: scraper.find("meta[property='og:image']", .attr("content")),
-            imageAlt: scraper.find("meta[property='og:image:alt']", .attr("content")),
-            imageWidth: scraper.find("meta[property='og:image:width']", .attr("content")),
-            imageHeight: scraper.find("meta[property='og:image:height']", .attr("content")),
-            url: scraper.find("meta[property='og:url']", .attr("content")),
-            type: scraper.find("meta[property='og:type']", .attr("content")),
-            siteName: scraper.find("meta[property='og:site_name']", .attr("content")),
-        ),
-        twitter: Metadata.Twitter(
-            title: scraper.find("meta[name='twitter:title']", .attr("content")),
-            description: scraper.find("meta[name='twitter:description']", .attr("content")),
-            image: scraper.find("meta[name='twitter:image']", .attr("content")),
-            site: scraper.find("meta[name='twitter:site']", .attr("content")),
-            card: scraper.find("meta[name='twitter:card']", .attr("content")),
-        ),
-        oembed: oembed
-    )
+        let (favicon, oembed) = try await (
+            scraper.getFavicon(),
+            scraper.getOembed()
+        )
+
+        let metadata = Metadata(
+            title: scraper.find("title", .text),
+            description: scraper.find("meta[name='description']", .attr("content")),
+            favicon: favicon,
+            themeColor: scraper.find("meta[name='theme-color']", .attr("content")),
+            og: Metadata.Og(
+                title: scraper.find("meta[property='og:title']", .attr("content")),
+                description: scraper.find("meta[property='og:description']", .attr("content")),
+                image: scraper.find("meta[property='og:image']", .attr("content")),
+                imageAlt: scraper.find("meta[property='og:image:alt']", .attr("content")),
+                imageWidth: scraper.find("meta[property='og:image:width']", .attr("content")),
+                imageHeight: scraper.find("meta[property='og:image:height']", .attr("content")),
+                url: scraper.find("meta[property='og:url']", .attr("content")),
+                type: scraper.find("meta[property='og:type']", .attr("content")),
+                siteName: scraper.find("meta[property='og:site_name']", .attr("content")),
+            ),
+            twitter: Metadata.Twitter(
+                title: scraper.find("meta[name='twitter:title']", .attr("content")),
+                description: scraper.find("meta[name='twitter:description']", .attr("content")),
+                image: scraper.find("meta[name='twitter:image']", .attr("content")),
+                site: scraper.find("meta[name='twitter:site']", .attr("content")),
+                card: scraper.find("meta[name='twitter:card']", .attr("content")),
+            ),
+            oembed: oembed
+        )
+
+        await cache.set(key: cacheKey, val: metadata)
+
+        return metadata
+    }
+
+    return cached
 }
 
 app.get("favicon.ico") { req -> [String: String] in [:] }
