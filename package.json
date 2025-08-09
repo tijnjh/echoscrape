@@ -1,15 +1,19 @@
 {
-  "name": "echoscrape",
-  "version": "1.0.50",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun . "
   },
   "dependencies": {
-    "elysia": "latest"
+    "consola": "^3.4.2",
+    "elysia": "latest",
+    "jsdom": "^26.1.0",
+    "try": "^1.0.0-beta.10"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "@antfu/eslint-config": "^5.2.0",
+    "@types/jsdom": "^21.1.7",
+    "bun-types": "latest",
+    "eslint": "^9.32.0"
   },
   "module": "src/index.js"
 }
