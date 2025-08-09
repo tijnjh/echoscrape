@@ -34,7 +34,7 @@ app.get('/metadata/*', async ({ params }) => {
     return {
       title: scraper.find('title')?.text(),
       description: scraper.find('meta[name="description"]')?.attr('content'),
-      favicon: favicon ?? undefined,
+      favicon,
       theme_color: scraper.find('meta[name="theme-color"]')?.attr('content'),
       og: orUndefined({
         title: scraper.find('meta[property="og:title"]')?.attr('content'),
