@@ -1,9 +1,15 @@
-# echoscrape
+# Elysia with Bun runtime
 
-[demo](https://wg.tijn.dev?h=s0nLL8q141JQsMnMKygtUchMsVUqLcpRUiipLEi1VSpJrShRQpKGiBaXJuVmgsRt9CHauWxSMsvAeotSi0tzgFI2%7EkAROwA&c=LYxBCoAgFAX3nuJBtBQyaGOnEbT60K9IIyW8exptZ4ZpTuevNeARwGGspW3WUKfjsYBp34KcDNOaNHzywbG8qBo2Ud5kw6IxqP6IoyiQeP4%7EwK9U17W1ziLjBQ&j=bZFNT8MwDIbv_RVRtEMiTSlwhG0HEBIgPg7jhpAaUq_NlCYldSemqv8dt6UTSJwc2Y_f13ZM8A2yXYjVrWNrlgfTVuBRfbYQj1twYDBEwQeAy6tkwiM0rcO_DQVQAobn9fE%7EF3xiuEySSVxRZ_tRWaQmAZKtN6xLGJsEra_boQAKdSSlt7N3ddCuBSJmM4XwhTfBI1kQyl3QufUFJ2QHaEqRlYh1c5mmYMrQmKhrkrN7r3I4pItu9OgzqbAELwTJjkNQVPsmeCHnSq5Rn%7Eb75W%7E9h3j3%7EvRI7tlYYmxVnm8W3dBBVuigX6WUmYu2KlgTzZr_IKFQttIF9Jyx9ETVs0IONLWt0QZPOvUEZMkYhjsFB8qFQjxsX55Vg5G2t7vjOO%7ES%7Eda5JbuQkvBeKqOHkwiIMcRxmUOwORu2_u%7EYE0b_2yff#js)
+## Getting Started
+To get started with this template, simply paste this command into your terminal:
+```bash
+bun create elysia ./elysia-example
+```
 
-tool to scrape metadata from any page
+## Development
+To start the development server run:
+```bash
+bun run dev
+```
 
-for example, heres the metadata from react.dev:
-
-<img width="572" src="https://github.com/user-attachments/assets/25a8fa08-dc71-4bc3-8d2e-c12d9d84c673" />
+Open http://localhost:3000/ with your browser to see the result.

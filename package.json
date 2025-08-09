@@ -1,25 +1,15 @@
 {
-  "type": "module",
-  "private": true,
-  "license": "AGPL-3.0-only",
-  "module": "src/index.ts",
+  "name": "echoscrape",
+  "version": "1.0.50",
   "scripts": {
-    "start": "bun run --watch src/index.ts"
-  },
-  "peerDependencies": {
-    "typescript": "^5.8.3"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "bun run --watch src/index.ts"
   },
   "dependencies": {
-    "@effect/platform": "^0.87.12",
-    "consola": "^3.4.2",
-    "effect": "^3.16.12",
-    "hono": "^4.8.4",
-    "is-localhost-ip": "^2.0.0",
-    "is-valid-domain": "^0.1.6",
-    "node-html-parser": "^7.0.1"
+    "elysia": "latest"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^4.16.2",
-    "eslint": "^9.30.1"
-  }
+    "bun-types": "latest"
+  },
+  "module": "src/index.js"
 }
