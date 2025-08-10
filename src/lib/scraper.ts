@@ -44,13 +44,13 @@ export class Scraper {
 
     consola.success(`Found element for selector ${selector}`)
 
-    return new ElementWrapper(element)
+    return element
   }
 
   async getFavicon() {
-    const faviconUrl = this.find('link[rel="icon"]')?.attr('href')
-      ?? this.find('link[rel="shortcut icon"]')?.attr('href')
-      ?? this.find('link[rel="apple-touch-icon"]')?.attr('href')
+    const faviconUrl = this.find('link[rel="icon"]')?.getAttribute('href')
+      ?? this.find('link[rel="shortcut icon"]')?.getAttribute('href')
+      ?? this.find('link[rel="apple-touch-icon"]')?.getAttribute('href')
 
     if (!faviconUrl) {
       const faviconIcoUrl = `${this.#url.toString()}/favicon.ico`
@@ -76,7 +76,7 @@ export class Scraper {
   }
 
   async getOembed() {
-    const oembedUrl = this.find('link[type="application/json+oembed"]')?.attr('href')
+    const oembedUrl = this.find('link[type="application/json+oembed"]')?.getAttribute('href')
 
     if (!oembedUrl) {
       consola.info('Website doesn\'t seem to have oEmbed, skipping...')
@@ -85,21 +85,5 @@ export class Scraper {
 
     consola.success('Detected oembed')
     return await fetch(oembedUrl).then(res => res.json())
-  }
-}
-
-class ElementWrapper {
-  #original: Element
-
-  constructor(original: Element) {
-    this.#original = original
-  }
-
-  text() {
-    return this.#original.textContent
-  }
-
-  attr(name: string) {
-    return this.#original.getAttribute(name)
   }
 }

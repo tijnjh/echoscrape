@@ -4,16 +4,16 @@
     "": {
       "name": "echoscrape",
       "dependencies": {
-        "consola": "^3.4.2",
+        "consola": "latest",
         "elysia": "latest",
-        "jsdom": "^26.1.0",
-        "try": "^1.0.0-beta.10",
+        "jsdom": "latest",
+        "try": "latest",
       },
       "devDependencies": {
-        "@antfu/eslint-config": "^5.2.0",
-        "@types/jsdom": "^21.1.7",
+        "@antfu/eslint-config": "latest",
+        "@types/jsdom": "latest",
         "bun-types": "latest",
-        "eslint": "^9.32.0",
+        "eslint": "latest",
       },
     },
   },
