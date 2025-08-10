@@ -1,4 +1,6 @@
 {
+  "license": "AGPL-3.0",
+  "module": "src/index.js",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun . "
@@ -15,7 +17,5 @@
     "@types/jsdom": "^21.1.7",
     "bun-types": "^1.2.19",
     "eslint": "^9.33.0"
-  },
-  "module": "src/index.js",
-  "license": "AGPL-3.0"
+  }
 }

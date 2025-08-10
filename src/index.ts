@@ -1,10 +1,10 @@
 import type { Metadata } from './lib/types'
+import cors from '@elysiajs/cors'
 import { consola } from 'consola'
 import { Elysia } from 'elysia'
 import { Cache } from './lib/cache'
 import { Scraper } from './lib/scraper'
 import { orUndefined } from './lib/utils'
-import cors from '@elysiajs/cors'
 
 const app = new Elysia().use(cors())
 const cache = new Cache()
