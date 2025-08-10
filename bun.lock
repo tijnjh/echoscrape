@@ -4,16 +4,17 @@
     "": {
       "name": "echoscrape",
       "dependencies": {
-        "consola": "latest",
-        "elysia": "latest",
-        "jsdom": "latest",
-        "try": "latest",
+        "@elysiajs/cors": "^1.3.3",
+        "consola": "^3.4.2",
+        "elysia": "^1.3.8",
+        "jsdom": "^26.1.0",
+        "try": "^1.0.0-beta.10",
       },
       "devDependencies": {
-        "@antfu/eslint-config": "latest",
-        "@types/jsdom": "latest",
-        "bun-types": "latest",
-        "eslint": "latest",
+        "@antfu/eslint-config": "^5.2.0",
+        "@types/jsdom": "^21.1.7",
+        "bun-types": "^1.2.19",
+        "eslint": "^9.33.0",
       },
     },
   },
@@ -45,6 +46,8 @@
     "@csstools/css-parser-algorithms": ["@csstools/css-parser-algorithms@3.0.5", "", { "peerDependencies": { "@csstools/css-tokenizer": "^3.0.4" } }, "sha512-DaDeUkXZKjdGhgYaHNJTV9pV7Y9B3b644jCLs9Upc3VeNGg6LWARAT6O+Q+/COo+2gg/bM5rhpMAtf70WqfBdQ=="],
 
     "@csstools/css-tokenizer": ["@csstools/css-tokenizer@3.0.4", "", {}, "sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw=="],
+
+    "@elysiajs/cors": ["@elysiajs/cors@1.3.3", "", { "peerDependencies": { "elysia": ">= 1.3.0" } }, "sha512-mYIU6PyMM6xIJuj7d27Vt0/wuzVKIEnFPjcvlkyd7t/m9xspAG37cwNjFxVOnyvY43oOd2I/oW2DB85utXpA2Q=="],
 
     "@es-joy/jsdoccomment": ["@es-joy/jsdoccomment@0.50.2", "", { "dependencies": { "@types/estree": "^1.0.6", "@typescript-eslint/types": "^8.11.0", "comment-parser": "1.4.1", "esquery": "^1.6.0", "jsdoc-type-pratt-parser": "~4.1.0" } }, "sha512-YAdE/IJSpwbOTiaURNCKECdAwqrJuFiZhylmesBcIRawtYKnBR2wxPhoIewMg+Yu+QuYvHfJNReWpoxGBKOChA=="],
 

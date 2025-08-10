@@ -4,8 +4,9 @@ import { Elysia } from 'elysia'
 import { Cache } from './lib/cache'
 import { Scraper } from './lib/scraper'
 import { orUndefined } from './lib/utils'
+import cors from '@elysiajs/cors'
 
-const app = new Elysia()
+const app = new Elysia().use(cors())
 const cache = new Cache()
 
 app.get('/', ({ request }) => {
