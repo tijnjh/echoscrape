@@ -4,18 +4,18 @@ export class Cache {
   #cache: Record<string, any> = {}
 
   async tryCache<T>(key: string, getter: () => Promise<T>) {
-    const cached = this.#get(key)
+    const cached = this.#get<T>(key)
 
     if (!cached) {
       const val = await getter()
       this.#set(key, val)
-      return val
+      return val as T
     }
 
     return cached
   }
 
-  #get<T>(key: string) {
+  #get<T = any>(key: string) {
     const item = this.#cache[key]
 
     if (!item) {

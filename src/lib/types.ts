@@ -1,27 +1,27 @@
-type OrNil<T> = T | null | undefined
+type OrNullish<T> = T | null | undefined
 
 export interface Metadata {
-  title: OrNil<string>
-  description: OrNil<string>
-  favicon: OrNil<string>
-  theme_color: OrNil<string>
-  og: OrNil<{
-    title: OrNil<string>
-    description: OrNil<string>
-    image: OrNil<string>
-    image_alt: OrNil<string>
-    image_width: OrNil<string>
-    image_height: OrNil<string>
-    url: OrNil<string>
-    type: OrNil<string>
-    site_name: OrNil<string>
+  title: OrNullish<string>
+  description: OrNullish<string>
+  favicon: OrNullish<string>
+  theme_color: OrNullish<string>
+  og: OrNullish<{
+    title: OrNullish<string>
+    description: OrNullish<string>
+    image: OrNullish<string>
+    image_alt: OrNullish<string>
+    image_width: OrNullish<string>
+    image_height: OrNullish<string>
+    url: OrNullish<string>
+    type: OrNullish<string>
+    site_name: OrNullish<string>
   }>
-  twitter: OrNil<{
-    title: OrNil<string>
-    description: OrNil<string>
-    image: OrNil<string>
-    site: OrNil<string>
-    card: OrNil<string>
+  twitter: OrNullish<{
+    title: OrNullish<string>
+    description: OrNullish<string>
+    image: OrNullish<string>
+    site: OrNullish<string>
+    card: OrNullish<string>
   }>
-  oembed: OrNil<Record<string, string>>
+  oembed: OrNullish<Record<string, string>>
 }
