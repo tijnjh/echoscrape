@@ -2,6 +2,7 @@ import type { Metadata } from './lib/types'
 import cors from '@elysiajs/cors'
 import { consola } from 'consola'
 import { Elysia } from 'elysia'
+import pkg from '../package.json'
 import { Cache } from './lib/cache'
 import { Scraper } from './lib/scraper'
 import { orUndefined } from './lib/utils'
@@ -15,15 +16,34 @@ app.get('/', ({ request }) => {
   const addr = `${url.protocol}//${url.host}`
 
   return {
-    example: `Go to ${addr}/metadata/react.dev`,
-    source: 'https://github.com/tijnjh/echoscrape',
+    name: 'echoscrape',
+    about: 'minimal api for scraping metadata, favicons, and text from public sites',
+    repo: 'https://github.com/tijnjh/echoscrape',
+    license: pkg.license,
+    endpoints: {
+      metadata: {
+        GET: `/metadata/{host}`,
+        note: 'returns site metadata (title, description, og, twitter, oembed, etc)',
+        example: `${addr}/metadata/react.dev`,
+      },
+      favicon: {
+        GET: `/favicon/{host}`,
+        note: 'redirects to site favicon if found',
+        example: `${addr}/favicon/vite.dev`,
+      },
+      text: {
+        GET: `/text/{host}?selector={css_selector}`,
+        note: 'returns textContent of first matching element',
+        example: `${addr}/text/bun.com?selector=h1`,
+      },
+    },
   }
 })
 
 app.get('/metadata/*', async ({ params }) => {
   const url = params['*']
 
-  return cache.tryCache<Metadata>(`metadata-${url}`, async () => {
+  return cache.tryCache<Metadata>(`metadata- ${url} `, async () => {
     const scraper = new Scraper(url)
     await scraper.init()
 
@@ -87,4 +107,4 @@ app.get('/text/*', async ({ params, query }) => {
 
 app.listen(3000)
 
-consola.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`)
+consola.log(`꩜ Echoscrape is running at http://${app.server?.hostname}:${app.server?.port}`)
