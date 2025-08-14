@@ -1,6 +1,5 @@
 import { consola } from 'consola'
 import { JSDOM } from 'jsdom'
-import { t } from 'try'
 
 function validateUrl(rawUrl: string) {
   if (rawUrl.endsWith('/')) {
@@ -55,9 +54,10 @@ export class Scraper {
     if (!faviconUrl) {
       const faviconIcoUrl = `${this.#url.toString()}/favicon.ico`
 
-      const res = await t(fetch(faviconIcoUrl, { method: 'HEAD' }))
-
-      if (!res.ok) {
+      try {
+        await fetch(faviconIcoUrl, { method: 'HEAD' })
+      }
+      catch {
         consola.fail('No favicon found')
         return null
       }
