@@ -55,11 +55,7 @@ app.get('/metadata/*', async ({ params }) => {
       scraper.getOembed(),
     ]))
 
-    if (res.isErr()) {
-      return { error: res.error.message }
-    }
-
-    const [favicon, oembed] = res.value
+    const [favicon, oembed] = res.unwrapOr([null, null])
 
     return {
       title: scraper.find('title').unwrapOr(null)?.textContent,
