@@ -50,15 +50,15 @@ app.get('/metadata/*', async ({ params }) => {
     const scraper = new Scraper(url)
     await scraper.init()
 
-    const [favicon, oembed] = Result.combine(await Promise.all([
+    const [favicon, oembed] = await Promise.all([
       scraper.getFavicon(),
       scraper.getOembed(),
-    ])).unwrapOr([undefined, undefined])
+    ])
 
     return {
       title: scraper.find('title').unwrapOr(null)?.textContent,
       description: scraper.find('meta[name="description"]').unwrapOr(null)?.getAttribute('content'),
-      favicon,
+      favicon: favicon.unwrapOr(undefined),
       theme_color: scraper.find('meta[name="theme-color"]').unwrapOr(null)?.getAttribute('content'),
       og: orUndefined({
         title: scraper.find('meta[property="og:title"]').unwrapOr(null)?.getAttribute('content'),
@@ -78,7 +78,7 @@ app.get('/metadata/*', async ({ params }) => {
         site: scraper.find('meta[name="twitter:site"]').unwrapOr(null)?.getAttribute('content'),
         card: scraper.find('meta[name="twitter:card"]').unwrapOr(null)?.getAttribute('content'),
       }),
-      oembed: orUndefined(oembed),
+      oembed: orUndefined(oembed.unwrapOr({})),
     } satisfies Metadata
   })
 })
