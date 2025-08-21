@@ -50,12 +50,10 @@ app.get('/metadata/*', async ({ params }) => {
     const scraper = new Scraper(url)
     await scraper.init()
 
-    const res = Result.combine(await Promise.all([
+    const [favicon, oembed] = Result.combine(await Promise.all([
       scraper.getFavicon(),
       scraper.getOembed(),
-    ]))
-
-    const [favicon, oembed] = res.unwrapOr([null, null])
+    ])).unwrapOr([undefined, undefined])
 
     return {
       title: scraper.find('title').unwrapOr(null)?.textContent,
