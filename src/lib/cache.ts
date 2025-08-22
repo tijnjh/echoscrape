@@ -3,19 +3,26 @@ import { consola } from 'consola'
 export class Cache {
   #cache: Record<string, any> = {}
 
-  async tryCache<T>(key: string, getter: () => Promise<T>) {
-    const cached = this.#get<T>(key)
+  async tryCache<T>(key: string, thunk: () => Promise<T>) {
+    const cached = this.get<T>(key)
 
     if (!cached) {
-      const val = await getter()
-      this.#set(key, val)
-      return val as T
+      try {
+        const val = await thunk()
+        this.set(key, val)
+        return val
+      }
+      catch (error) {
+        throw new Error(
+          `failed to run getter effect for key: '${key}':\n ${JSON.stringify(error, null, 2)}`,
+        )
+      }
     }
 
     return cached
   }
 
-  #get<T = any>(key: string) {
+  private get<T = any>(key: string) {
     const item = this.#cache[key]
 
     if (!item) {
@@ -27,7 +34,7 @@ export class Cache {
     return item as T
   }
 
-  #set(key: string, val: any) {
+  private set(key: string, val: any) {
     this.#cache[key] = val
     consola.success(`(cache) Data cached for '${key}'.`)
   }
