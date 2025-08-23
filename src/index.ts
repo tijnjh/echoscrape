@@ -7,13 +7,14 @@ import { Elysia } from 'elysia'
 import pkg from '../package.json'
 import { Cache } from './lib/cache'
 import { Scraper } from './lib/scraper'
-import { generatorToPromise, orUndefined } from './lib/utils'
+import { orUndefined } from './lib/utils'
 
 const app = new Elysia().use(cors())
+
 const cache = new Cache()
 
-app.get('/', ({ request }) => {
-  const url = new URL(request.url)
+app.get('/', (c) => {
+  const url = new URL(c.request.url)
   const addr = `${url.protocol}//${url.host}`
 
   return {
@@ -43,13 +44,10 @@ app.get('/', ({ request }) => {
 
 app.get('/*', c => c.redirect('/'))
 
-app.get('/metadata/*', c => generatorToPromise(function* () {
+app.get('/metadata/*', c => Effect.runPromise(Effect.gen(function* () {
   const url = c.params['*']
-
   return yield* cache.tryCache(`metadata-${url}`, Effect.gen(function* () {
-    const scraper = new Scraper(url)
-    yield* scraper.initializeDocument
-
+    const scraper = yield* Scraper.init(url)
     const metadata: Metadata = yield* Effect.all({
       title: scraper.find('title').pipe(Effect.andThen(e => e.textContent), Effect.orElseSucceed(() => undefined)),
       description: scraper.find('meta[name="description"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
@@ -79,34 +77,25 @@ app.get('/metadata/*', c => generatorToPromise(function* () {
         }
       }), Effect.orElseSucceed(() => undefined)),
     }, { concurrency: 'unbounded' })
-
     return metadata
   }))
-}))
+})))
 
-app.get('/favicon/*', c => generatorToPromise(function* () {
+app.get('/favicon/*', c => Effect.runPromise(Effect.gen(function* () {
   const url = c.params['*']
-
-  const scraper = new Scraper(url)
-  yield* scraper.initializeDocument
-
-  const faviconUrl = yield* scraper.getFavicon
-
-  return c.redirect(faviconUrl)
-}))
-
-app.get('/text/*', c => generatorToPromise(function* () {
-  const url = c.params['*']
-
-  const scraper = new Scraper(url)
-  yield* scraper.initializeDocument
-
-  return scraper.find(c.query.selector).pipe(
-    Effect.andThen(e => e.textContent),
-    Effect.orElseSucceed(() => undefined),
-    Effect.runSync,
+  return yield* Scraper.init(url).pipe(
+    Effect.andThen(scraper => scraper.getFavicon),
+    Effect.andThen(faviconUrl => c.redirect(faviconUrl)),
   )
-}))
+})))
+
+app.get('/text/*', c => Effect.runPromise(Effect.gen(function* () {
+  const url = c.params['*']
+  return yield* Scraper.init(url).pipe(
+    Effect.andThen(scraper => scraper.find(c.query.selector)),
+    Effect.andThen(e => e.textContent),
+  )
+})))
 
 app.listen(3000)
 

@@ -22,16 +22,16 @@ export class Cache {
     const item = this.cache[key]
 
     if (!item) {
-      consola.fail(`(cache) Cache miss for '${key}'...`)
+      consola.fail(`(cache) cache miss for '${key}'...`)
       return null
     }
 
-    consola.success(`(cache) Cache hit for '${key}'. Returning cached data.`)
+    consola.success(`(cache) cache hit for '${key}'. returning cached data.`)
     return item
   }
 
   private set(key: string, val: any) {
     this.cache[key] = val
-    consola.success(`(cache) Data cached for '${key}'.`)
+    consola.success(`(cache) data cached for '${key}'.`)
   }
 }

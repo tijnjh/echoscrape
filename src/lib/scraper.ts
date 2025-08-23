@@ -21,31 +21,28 @@ const validateUrl = (rawUrl: string) => Effect.gen(function* () {
 })
 
 export class Scraper {
-  private url: URL
-  private document?: Document
+  private url!: URL
+  private document!: Document
 
-  constructor(url: string) {
-    this.url = Effect.runSync(validateUrl(url))
-  }
+  static init = (url: string) => Effect.gen(this, function* () {
+    const scraper = new Scraper()
 
-  initializeDocument = Effect.gen(this, function* () {
+    scraper.url = yield* validateUrl(url)
+
     const html = yield* Effect.tryPromise({
-      try: () => fetch(this.url).then(r => r.text()),
+      try: () => fetch(scraper.url).then(r => r.text()),
       catch: (error) => {
         consola.error(error)
-        return new Error(`failed to fetch ${this.url}: ${error}`)
+        return new Error(`failed to fetch ${scraper.url}: ${error}`)
       },
     })
 
-    const dom = new JSDOM(html)
-    this.document = dom.window.document
+    scraper.document = new JSDOM(html).window.document
+
+    return scraper
   })
 
   find = (selector: string) => Effect.gen(this, function* () {
-    if (!this.document) {
-      return yield* Effect.fail(new Error('this.document is undefined, did you forget to call "scraper.initializeDocument"'))
-    }
-
     const element = this.document.querySelector(selector)
 
     if (!element) {
