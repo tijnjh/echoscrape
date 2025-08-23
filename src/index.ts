@@ -2,11 +2,12 @@ import type { Metadata } from './lib/types'
 import cors from '@elysiajs/cors'
 import { consola } from 'consola'
 import { Effect } from 'effect'
+import { ParseError } from 'effect/ParseResult'
 import { Elysia } from 'elysia'
 import pkg from '../package.json'
 import { Cache } from './lib/cache'
 import { Scraper } from './lib/scraper'
-import { orUndefined } from './lib/utils'
+import { generatorToPromise, orUndefined } from './lib/utils'
 
 const app = new Elysia().use(cors())
 const cache = new Cache()
@@ -42,63 +43,70 @@ app.get('/', ({ request }) => {
 
 app.get('/*', c => c.redirect('/'))
 
-app.get('/metadata/*', async (c) => {
+app.get('/metadata/*', c => generatorToPromise(function* () {
   const url = c.params['*']
 
-  return await cache.tryCache(`metadata-${url}`, async () => {
+  return yield* cache.tryCache(`metadata-${url}`, Effect.gen(function* () {
     const scraper = new Scraper(url)
+    yield* scraper.initializeDocument
 
-    // scraper.initializeDocument.pipe(Effect.allSuccesses)
-
-    const metadata: Metadata = await Effect.all({
-      title: scraper.find('title').pipe(Effect.andThen(e => e.textContent)),
-      description: scraper.find('meta[name="description"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-      favicon: scraper.getFavicon,
-      theme_color: scraper.find('meta[name="theme-color"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-      og: Effect.allSuccesses({
-        title: scraper.find('meta[property="og:title"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        description: scraper.find('meta[property="og:description"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        image: scraper.find('meta[property="og:image"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        image_alt: scraper.find('meta[property="og:image:alt"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        image_width: scraper.find('meta[property="og:image:width"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        image_height: scraper.find('meta[property="og:image:height"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        url: scraper.find('meta[property="og:url"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        type: scraper.find('meta[property="og:type"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        site_name: scraper.find('meta[property="og:site_name"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
+    const metadata: Metadata = yield* Effect.all({
+      title: scraper.find('title').pipe(Effect.andThen(e => e.textContent), Effect.orElseSucceed(() => undefined)),
+      description: scraper.find('meta[name="description"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+      favicon: scraper.getFavicon.pipe(Effect.orElseSucceed(() => undefined)),
+      theme_color: scraper.find('meta[name="theme-color"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+      og: Effect.all({
+        title: scraper.find('meta[property="og:title"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        description: scraper.find('meta[property="og:description"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        image: scraper.find('meta[property="og:image"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        image_alt: scraper.find('meta[property="og:image:alt"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        image_width: scraper.find('meta[property="og:image:width"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        image_height: scraper.find('meta[property="og:image:height"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        url: scraper.find('meta[property="og:url"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        type: scraper.find('meta[property="og:type"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        site_name: scraper.find('meta[property="og:site_name"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
       }).pipe(Effect.andThen(obj => orUndefined(obj))),
-      twitter: Effect.allSuccesses({
-        title: scraper.find('meta[name="twitter:title"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        description: scraper.find('meta[name="twitter:description"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        image: scraper.find('meta[name="twitter:image"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        site: scraper.find('meta[name="twitter:site"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
-        card: scraper.find('meta[name="twitter:card"]').pipe(Effect.andThen(e => e.getAttribute('content'))),
+      twitter: Effect.all({
+        title: scraper.find('meta[name="twitter:title"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        description: scraper.find('meta[name="twitter:description"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        image: scraper.find('meta[name="twitter:image"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        site: scraper.find('meta[name="twitter:site"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
+        card: scraper.find('meta[name="twitter:card"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
       }).pipe(Effect.andThen(obj => orUndefined(obj))),
-      oembed: scraper.getOembed.pipe(Effect.andThen(obj => orUndefined(obj))),
-    }, { concurrency: 'unbounded' }).pipe(Effect.runSync)
+      oembed: scraper.getOembed.pipe(Effect.andThen(obj => orUndefined(obj)), Effect.mapError((e) => {
+        if (e instanceof ParseError) {
+          consola.error(e)
+        }
+      }), Effect.orElseSucceed(() => undefined)),
+    }, { concurrency: 'unbounded' })
 
     return metadata
-  })
-})
+  }))
+}))
 
-app.get('/favicon/*', (c) => {
+app.get('/favicon/*', c => generatorToPromise(function* () {
   const url = c.params['*']
 
-  return new Scraper(url).getFavicon.pipe(
-    Effect.andThen(faviconUrl => c.redirect(faviconUrl)),
-    Effect.orElseSucceed(() => 'no favicon found'),
-    Effect.runSync,
-  )
-})
+  const scraper = new Scraper(url)
+  yield* scraper.initializeDocument
 
-app.get('/text/*', (c) => {
+  const faviconUrl = yield* scraper.getFavicon
+
+  return c.redirect(faviconUrl)
+}))
+
+app.get('/text/*', c => generatorToPromise(function* () {
   const url = c.params['*']
 
-  return new Scraper(url).find(c.query.selector).pipe(
+  const scraper = new Scraper(url)
+  yield* scraper.initializeDocument
+
+  return scraper.find(c.query.selector).pipe(
     Effect.andThen(e => e.textContent),
     Effect.orElseSucceed(() => undefined),
     Effect.runSync,
   )
-})
+}))
 
 app.listen(3000)
 

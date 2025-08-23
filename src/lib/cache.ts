@@ -1,29 +1,25 @@
 import { consola } from 'consola'
+import { Effect } from 'effect/index'
 
 export class Cache {
-  #cache: Record<string, any> = {}
+  private cache: Record<string, any> = {}
 
-  async tryCache<T>(key: string, thunk: () => Promise<T>) {
+  tryCache = <T>(key: string, effect: Effect.Effect<T, Error>) => Effect.gen(this, function* () {
     const cached = this.get<T>(key)
 
     if (!cached) {
-      try {
-        const val = await thunk()
-        this.set(key, val)
-        return val
-      }
-      catch (error) {
-        throw new Error(
-          `failed to run getter effect for key: '${key}':\n ${JSON.stringify(error, null, 2)}`,
-        )
-      }
+      const val = yield* effect.pipe(Effect.mapError(
+        error => `got error while trying to run thunk for key: '${key}': ${error.message}`,
+      ))
+      this.set(key, val)
+      return val
     }
 
     return cached
-  }
+  })
 
-  private get<T = any>(key: string) {
-    const item = this.#cache[key]
+  private get<T = any>(key: string): T | null {
+    const item = this.cache[key]
 
     if (!item) {
       consola.fail(`(cache) Cache miss for '${key}'...`)
@@ -31,11 +27,11 @@ export class Cache {
     }
 
     consola.success(`(cache) Cache hit for '${key}'. Returning cached data.`)
-    return item as T
+    return item
   }
 
   private set(key: string, val: any) {
-    this.#cache[key] = val
+    this.cache[key] = val
     consola.success(`(cache) Data cached for '${key}'.`)
   }
 }

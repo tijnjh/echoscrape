@@ -1,5 +1,5 @@
 import { consola } from 'consola'
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { JSDOM } from 'jsdom'
 
 const validateUrl = (rawUrl: string) => Effect.gen(function* () {
@@ -33,7 +33,7 @@ export class Scraper {
       try: () => fetch(this.url).then(r => r.text()),
       catch: (error) => {
         consola.error(error)
-        return new Error(JSON.stringify(error))
+        return new Error(`failed to fetch ${this.url}: ${error}`)
       },
     })
 
@@ -41,26 +41,19 @@ export class Scraper {
     this.document = dom.window.document
   })
 
-  // async initializeDocument() {
-  //   try {
-  //     const html = await fetch(this.url).then(r => r.text())
-  //     const dom = new JSDOM(html)
-  //     this.document = dom.window.document
-  //   }
-  //   catch (error) {
-  //     return Effect.fail(new Error(`failed: ${error}`))
-  //   }
-  // }
-
   find = (selector: string) => Effect.gen(this, function* () {
-    const element = this.document?.querySelector(selector)
+    if (!this.document) {
+      return yield* Effect.fail(new Error('this.document is undefined, did you forget to call "scraper.initializeDocument"'))
+    }
+
+    const element = this.document.querySelector(selector)
 
     if (!element) {
-      consola.fail(`no elements found for selector ${selector}`)
+      consola.fail(`no elements found for selector '${selector}' on '${this.url.hostname}'`)
       return yield* Effect.fail(new Error('failed to find element'))
     }
 
-    consola.success(`Found element for selector ${selector}`)
+    consola.success(`found element for selector '${selector}' on '${this.url.hostname}'`)
 
     return element
   })
@@ -81,7 +74,7 @@ export class Scraper {
         try: () => fetch(faviconIcoUrl, { method: 'HEAD' }),
         catch: () => {
           consola.fail('no favicon found')
-          return Effect.fail(new Error('no favicon found'))
+          return new Error('no favicon found')
         },
       })
 
@@ -101,8 +94,10 @@ export class Scraper {
   getOembed = Effect.gen(this, function* () {
     const oembedTagElement = yield* this.find('link[type="application/json+oembed"]').pipe(Effect.orElseFail(() => {
       consola.info('website doesnt seem to have oembed, skipping...')
-      return Effect.fail(new Error('no oembed link tag found'))
+      return new Error('no oembed link tag found')
     }))
+
+    consola.log(oembedTagElement)
 
     consola.success('detected oembed')
 
@@ -117,6 +112,11 @@ export class Scraper {
       catch: () => new Error('failed to fetch oembed url'),
     })
 
-    return res as Record<string, string>
+    const schema = Schema.Record({
+      key: Schema.String,
+      value: Schema.Any,
+    })
+
+    return yield* Schema.decode(schema)(res)
   })
 }
