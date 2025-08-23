@@ -24,17 +24,17 @@ app.get('/', (c) => {
     license: pkg.license,
     endpoints: {
       metadata: {
-        GET: `/metadata/{host}`,
+        GET: '/metadata/{host}',
         note: 'returns site metadata (title, description, og, twitter, oembed, etc)',
         example: `${addr}/metadata/react.dev`,
       },
       favicon: {
-        GET: `/favicon/{host}`,
+        GET: '/favicon/{host}',
         note: 'redirects to site favicon if found',
         example: `${addr}/favicon/vite.dev`,
       },
       text: {
-        GET: `/text/{host}?selector={css_selector}`,
+        GET: '/text/{host}?selector={css-selector}',
         note: 'returns textContent of first matching element',
         example: `${addr}/text/bun.com?selector=h1`,
       },
