@@ -24,4 +24,5 @@ export interface Metadata {
     card: OrNullish<string>
   }>
   oembed: OrNullish<Record<string, string>>
+  _stats?: Record<string, any>
 }

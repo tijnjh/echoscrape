@@ -46,9 +46,11 @@ app.get('/*', c => c.redirect('/'))
 
 app.get('/metadata/*', c => Effect.runPromise(Effect.gen(function* () {
   const url = c.params['*']
-  return yield* cache.tryCache(`metadata-${url}`, Effect.gen(function* () {
+
+  const startTime = performance.now()
+  const { value, ...stats } = yield* cache.tryCache<Metadata>(`metadata-${url}`, Effect.gen(function* () {
     const scraper = yield* Scraper.init(url)
-    const metadata: Metadata = yield* Effect.all({
+    return yield* Effect.all({
       title: scraper.find('title').pipe(Effect.andThen(e => e.textContent), Effect.orElseSucceed(() => undefined)),
       description: scraper.find('meta[name="description"]').pipe(Effect.andThen(e => e.getAttribute('content')), Effect.orElseSucceed(() => undefined)),
       favicon: scraper.getFavicon.pipe(Effect.orElseSucceed(() => undefined)),
@@ -77,8 +79,14 @@ app.get('/metadata/*', c => Effect.runPromise(Effect.gen(function* () {
         }
       }), Effect.orElseSucceed(() => undefined)),
     }, { concurrency: 'unbounded' })
-    return metadata
   }))
+  const endTime = performance.now()
+
+  const tookMs = endTime - startTime
+
+  value._stats = { ...cache._stats, ...stats, tookMs }
+
+  return value
 })))
 
 app.get('/favicon/*', c => Effect.runPromise(Effect.gen(function* () {
