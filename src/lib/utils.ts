@@ -1,9 +1,8 @@
-export function orUndefined<T extends object>(obj: T) {
-  if (!obj)
-    return undefined
-
-  if (Object.values(obj).filter(v => !!v).length === 0)
-    return undefined
-
-  return obj
+export function undefinedOnEmpty<O extends object>(o: O) {
+  for (const i in o) {
+    if (Object.prototype.hasOwnProperty.call(o, i)) {
+      return o
+    }
+  }
+  return undefined
 }

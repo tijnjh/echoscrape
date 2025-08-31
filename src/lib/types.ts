@@ -1,27 +1,25 @@
-type OrNullish<T> = T | null | undefined
-
 export interface Metadata {
-  title: OrNullish<string>
-  description: OrNullish<string>
-  favicon: OrNullish<string>
-  theme_color: OrNullish<string>
-  og: OrNullish<{
-    title: OrNullish<string>
-    description: OrNullish<string>
-    image: OrNullish<string>
-    image_alt: OrNullish<string>
-    image_width: OrNullish<string>
-    image_height: OrNullish<string>
-    url: OrNullish<string>
-    type: OrNullish<string>
-    site_name: OrNullish<string>
-  }>
-  twitter: OrNullish<{
-    title: OrNullish<string>
-    description: OrNullish<string>
-    image: OrNullish<string>
-    site: OrNullish<string>
-    card: OrNullish<string>
-  }>
-  oembed: OrNullish<Record<string, string>>
+  title?: string
+  description?: string
+  favicon?: string
+  theme_color?: string
+  og?: {
+    title?: string
+    description?: string
+    image?: string
+    image_alt?: string
+    image_width?: string
+    image_height?: string
+    url?: string
+    type?: string
+    site_name?: string
+  }
+  twitter?: {
+    title?: string
+    description?: string
+    image?: string
+    site?: string
+    card?: string
+  }
+  oembed?: Record<string, string>
 }
