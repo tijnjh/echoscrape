@@ -1,9 +1,0 @@
-# echoscrape
-
-[demo](https://wg.tijn.dev/?h=s0nLL8q141JQsMnMKygtUchMsVUqLcpRUiipLEi1VSpJrShRQpKGiBaXJuVmgsRt9CHauWxSMsvAeotSi0tzgFI2%7EkAROwA&c=LYxBCoAgFAX3nuJBtBQyaGOnEbT60K9IIyW8exptZ4ZpTuevNeARwGGspW3WUKfjsYBp34KcDNOaNHzywbG8qBo2Ud5kw6IxqP6IoyiQeP4%7EwK9U17W1ziLjBQ&j=bZFNT8MwDIbv_RVRtEMiTSlwhG0HEBIgPg7jhpAWUq_NlCYldSemqf8dp6UTSJwc2Y9fv3ZM8C2ybYj1rWNLVgTT1eBRfXYQD2twYDBEwRPA5VU24hHazuHfhhIoAel5fbgvBB8ZLrNsFFfU2X3UFqlJgGTLFTtmjI2C1jddKoBCHUnp7exd7bXrgIhpmEL4wpvgkUYQyl3QhfUlJ2QLaCqxqRCb9jLPwVShNVE3JGd3XhWwz2tAXWjU%7Eew4DOs3UmEFXgjSH9xQVLs2eCGnSuJPRn8Zsd5DvHt9eiQbm6HE2KI6X82OqYNmooN%7EkVNmKtq6ZG00S_6DhFLZWpfQc8byE9VMCgWQfdugDZ50mhHYZENIBwsOlAuleFi_PKsWI53Bbg%7ED3znznXNzdiEl4b1URqfbCIgxxGGZfbAFS1v_d9URo4_us28)
-
-minimal api for scraping metadata, favicons, and text from public sites
-
-for example, heres the metadata from react.dev:
-
-<img width="572" src="https://github.com/user-attachments/assets/25a8fa08-dc71-4bc3-8d2e-c12d9d84c673" />
