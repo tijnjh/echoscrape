@@ -1,7 +1,7 @@
-mod scraper;
-
 use actix_web::{App, HttpServer, Responder, get, web};
 use serde::Serialize;
+
+mod scraper;
 
 #[derive(Serialize)]
 struct IndexGreeting {
@@ -19,6 +19,11 @@ async fn index() -> impl Responder {
         repo: None,
         license: None,
     })
+}
+
+#[get("/metadata/{url}")]
+async fn metadata(url: web::Path<String>) -> impl Responder {
+    let scraper = crate::scraper::Scraper::init(url.to_string());
 }
 
 #[get("/{name}")]
