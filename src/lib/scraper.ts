@@ -1,103 +1,101 @@
-import { consola } from 'consola'
-import domino from 'domino'
+import { createWindow } from "domino";
 
 function validateUrl(rawUrl: string) {
-  if (rawUrl.endsWith('/')) {
-    rawUrl = rawUrl.slice(0, -1)
+  if (rawUrl.endsWith("/")) {
+    rawUrl = rawUrl.slice(0, -1);
   }
 
   if (!/^https?:\/\//i.test(rawUrl)) {
-    rawUrl = `http://${rawUrl}`
+    rawUrl = `http://${rawUrl}`;
   }
 
-  const parsedUrl = new URL(rawUrl)
+  const parsedUrl = new URL(rawUrl);
 
-  if (['localhost', '127.0.0.1', '::1'].includes(parsedUrl.hostname)) {
-    throw new Error('access to localhost not allowed')
+  if (["localhost", "127.0.0.1", "::1"].includes(parsedUrl.hostname)) {
+    throw new Error("access to localhost not allowed");
   }
 
-  return parsedUrl
+  return parsedUrl;
 }
 
 export class Scraper {
-  private url!: URL
-  private root?: Document
+  private url?: URL;
+  private root?: Document;
 
   private constructor() {}
 
   static async init(url: string) {
-    const scraper = new Scraper()
+    const scraper = new Scraper();
 
-    const validUrl = validateUrl(url)
-    const html = await (await fetch(validUrl)).text()
-    const dom = domino.createWindow(html).document
+    const validUrl = validateUrl(url);
+    const html = await (await fetch(validUrl)).text();
+    const dom = createWindow(html).document;
 
-    scraper.url = validUrl
-    scraper.root = dom
+    scraper.url = validUrl;
+    scraper.root = dom;
 
-    return scraper
+    return scraper;
   }
 
   find(selector: string) {
-    const element = this.root?.querySelector(selector)
+    const element = this.root?.querySelector(selector);
 
     if (!element) {
-      consola.fail(`no elements found for selector ${selector}`)
-      return null
+      console.warn(`no elements found for selector ${selector}`);
+      return;
     }
 
-    consola.success(`found element for selector ${selector}`)
+    console.log(`found element for selector ${selector}`);
 
-    return element
+    return element;
   }
 
   async getFavicon() {
-    const linkElement = this.find('link[rel="icon"]')
-      ?? this.find('link[rel="shortcut icon"]')
-      ?? this.find('link[rel="apple-touch-icon"]')
+    const linkElement =
+      this.find('link[rel="icon"]') ??
+      this.find('link[rel="shortcut icon"]') ??
+      this.find('link[rel="apple-touch-icon"]');
 
-    const faviconUrl = linkElement?.getAttribute('href')
+    const faviconUrl = linkElement?.getAttribute("href");
 
     if (!faviconUrl) {
-      const faviconIcoUrl = `${this.url.toString()}/favicon.ico`
+      const faviconIcoUrl = `${this.url?.toString()}/favicon.ico`;
 
       try {
-        await fetch(faviconIcoUrl, { method: 'head' })
-      }
-      catch {
-        consola.fail('no favicon found')
-        return null
+        await fetch(faviconIcoUrl, { method: "head" });
+      } catch {
+        console.warn("no favicon found");
+        return;
       }
 
-      consola.success('/favicon.ico exists')
-      return faviconIcoUrl
+      console.log("/favicon.ico exists");
+      return faviconIcoUrl;
     }
 
-    consola.success(`favicon found in HTML → ${faviconUrl}`)
+    console.log(`favicon found in HTML → ${faviconUrl}`);
 
-    if (faviconUrl.startsWith('/')) {
-      return `${this.url.toString()}${faviconUrl.slice(1)}`
+    if (faviconUrl.startsWith("/")) {
+      return `${this.url?.toString()}${faviconUrl.slice(1)}`;
     }
 
-    return faviconUrl
+    return faviconUrl;
   }
 
   async getOembed() {
-    const oembedTagElement = this.find('link[type="application/json+oembed"]')
+    const oembedTagElement = this.find('link[type="application/json+oembed"]');
 
     if (!oembedTagElement) {
-      consola.info('website doesnt seem to have oembed, skipping...')
-      return null
+      console.log("website doesn't seem to have oembed, skipping...");
+      return;
     }
 
-    consola.success('detected oembed')
-
-    const oembedUrl = oembedTagElement.getAttribute('href')
+    console.log("detected oembed");
+    const oembedUrl = oembedTagElement.getAttribute("href");
 
     if (!oembedUrl) {
-      return null
+      return;
     }
 
-    return await (await fetch(oembedUrl)).json()
+    return await (await fetch(oembedUrl)).json();
   }
 }

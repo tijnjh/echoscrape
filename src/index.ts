@@ -1,96 +1,101 @@
-import type { Metadata } from './lib/types'
-import cors from '@elysiajs/cors'
-import { consola } from 'consola'
-import { Elysia } from 'elysia'
-import pkg from '../package.json'
-import { Scraper } from './lib/scraper'
-import { undefinedOnEmpty } from './lib/utils'
+import type { Metadata } from "#lib/types.ts";
 
-const app = new Elysia().use(cors())
+import { Scraper } from "#lib/scraper.ts";
+import { undefinedOnEmpty } from "#lib/utils.ts";
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
 
-app.get('/', ({ request }) => {
-  const url = new URL(request.url)
+import pkg from "../package.json" with { type: "json" };
 
-  const addr = `${url.protocol}//${url.host}`
+const app = new Hono().use(cors());
 
-  return {
-    name: 'echoscrape',
-    about: 'minimal api for scraping metadata, favicons, and text from public sites',
-    repo: 'https://github.com/tijnjh/echoscrape',
+app.get("/", (c) => {
+  const url = new URL(c.req.url);
+
+  const addr = `${url.protocol}//${url.host}`;
+
+  return c.json({
+    name: "echoscrape",
+    about: "minimal api for scraping metadata, favicon, and text from public sites",
+    repo: "https://github.com/tijnjh/echoscrape",
     license: pkg.license,
     endpoints: {
       metadata: {
         GET: `/metadata/{host}`,
-        note: 'returns site metadata (title, description, og, twitter, oembed, etc)',
+        note: "returns site metadata (title, description, og, twitter, oembed, etc)",
         example: `${addr}/metadata/react.dev`,
       },
       favicon: {
         GET: `/favicon/{host}`,
-        note: 'redirects to site favicon if found',
+        note: "redirects to site favicon if found",
         example: `${addr}/favicon/vite.dev`,
       },
       text: {
         GET: `/text/{host}?selector={css_selector}`,
-        note: 'returns textContent of first matching element',
+        note: "returns textContent of first matching element",
         example: `${addr}/text/bun.com?selector=h1`,
       },
     },
+  });
+});
+
+app.get("/metadata/:path{.+}", async (c) => {
+  const scraper = await Scraper.init(c.req.param("path"));
+
+  const [favicon, oembed] = await Promise.all([scraper.getFavicon(), scraper.getOembed()]);
+
+  function getContentAttr(name: string) {
+    return scraper.find(name)?.getAttribute("content") ?? undefined;
   }
-})
 
-app.get('/*', ({ redirect }) => redirect('/'))
-
-app.get('/metadata/*', async ({ params }) => {
-  const url = params['*']
-
-  const scraper = await Scraper.init(url)
-
-  const [favicon, oembed] = await Promise.all([
-    scraper.getFavicon(),
-    scraper.getOembed(),
-  ])
-
-  return {
-    title: scraper.find('title')?.textContent,
-    description: scraper.find('meta[name="description"]')?.getAttribute('content') ?? undefined,
-    favicon: favicon ?? undefined,
-    theme_color: scraper.find('meta[name="theme-color"]')?.getAttribute('content') ?? undefined,
+  return c.json({
+    title: scraper.find("title")?.textContent,
+    description: getContentAttr('meta[name="description"]'),
+    favicon,
+    theme_color: getContentAttr('meta[name="theme-color"]'),
     og: undefinedOnEmpty({
-      title: scraper.find('meta[property="og:title"]')?.getAttribute('content') ?? undefined,
-      description: scraper.find('meta[property="og:description"]')?.getAttribute('content') ?? undefined,
-      image: scraper.find('meta[property="og:image"]')?.getAttribute('content') ?? undefined,
-      image_alt: scraper.find('meta[property="og:image:alt"]')?.getAttribute('content') ?? undefined,
-      image_width: scraper.find('meta[property="og:image:width"]')?.getAttribute('content') ?? undefined,
-      image_height: scraper.find('meta[property="og:image:height"]')?.getAttribute('content') ?? undefined,
-      url: scraper.find('meta[property="og:url"]')?.getAttribute('content') ?? undefined,
-      type: scraper.find('meta[property="og:type"]')?.getAttribute('content') ?? undefined,
-      site_name: scraper.find('meta[property="og:site_name"]')?.getAttribute('content') ?? undefined,
+      title: getContentAttr('meta[property="og:title"]'),
+      description: getContentAttr('meta[property="og:description"]'),
+      image: getContentAttr('meta[property="og:image"]'),
+      image_alt: getContentAttr('meta[property="og:image:alt"]'),
+      image_width: getContentAttr('meta[property="og:image:width"]'),
+      image_height: getContentAttr('meta[property="og:image:height"]'),
+      url: getContentAttr('meta[property="og:url"]'),
+      type: getContentAttr('meta[property="og:type"]'),
+      site_name: getContentAttr('meta[property="og:site_name"]'),
     }),
     twitter: undefinedOnEmpty({
-      title: scraper.find('meta[name="twitter:title"]')?.getAttribute('content') ?? undefined,
-      description: scraper.find('meta[name="twitter:descr-iption"]')?.getAttribute('content') ?? undefined,
-      image: scraper.find('meta[name="twitter:image"]')?.getAttribute('content') ?? undefined,
-      site: scraper.find('meta[name="twitter:site"]')?.getAttribute('content') ?? undefined,
-      card: scraper.find('meta[name="twitter:card"]')?.getAttribute('content') ?? undefined,
+      title: getContentAttr('meta[name="twitter:title"]'),
+      description: getContentAttr('meta[name="twitter:description"]'),
+      image: getContentAttr('meta[name="twitter:image"]'),
+      site: getContentAttr('meta[name="twitter:site"]'),
+      card: getContentAttr('meta[name="twitter:card"]'),
     }),
     oembed: undefinedOnEmpty(oembed),
-  } satisfies Metadata
-})
+  } satisfies Metadata);
+});
 
-app.get('/favicon/*', async ({ params, redirect }) => {
-  const url = params['*']
-  const scraper = await Scraper.init(url)
-  const favicon = await scraper.getFavicon()
-  return favicon ? redirect(favicon) : 'no favicon found'
-})
+app.get("/favicon/:path{.+}", async (c) => {
+  const url = c.req.param("path");
+  const scraper = await Scraper.init(url);
+  const favicon = await scraper.getFavicon();
+  return favicon ? c.redirect(favicon) : c.json("no favicon found");
+});
 
-app.get('/text/*', async ({ params, query }) => {
-  const url = params['*']
-  const scraper = await Scraper.init(url)
-  const text = scraper.find(query.selector)?.textContent
-  return text
-})
+app.get("/text/:path{.+}", async (c) => {
+  const url = c.req.param("path");
+  const scraper = await Scraper.init(url);
+  const text = scraper.find(c.req.query("selector")!)?.textContent;
+  return c.json(text);
+});
 
-app.listen(3000)
-
-consola.log(`꩜ Echoscrape is running at http://${app.server?.hostname}:${app.server?.port}`)
+serve(
+  {
+    fetch: app.fetch,
+    port: 3000,
+  },
+  (info) => {
+    console.log(`꩜ Echoscrape is running at http://localhost:${info.port}`);
+  },
+);
