@@ -51,8 +51,7 @@ export class Scraper {
   }
 
   async getFavicon() {
-    const linkElement =
-      this.find('link[rel="icon"]') ??
+    const linkElement = this.find('link[rel="icon"]') ??
       this.find('link[rel="shortcut icon"]') ??
       this.find('link[rel="apple-touch-icon"]');
 
