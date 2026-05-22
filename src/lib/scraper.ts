@@ -1,4 +1,4 @@
-import { createWindow } from "domino";
+import defer * as domino from "domino";
 
 function validateUrl(rawUrl: string) {
   if (rawUrl.endsWith("/")) {
@@ -29,7 +29,7 @@ export class Scraper {
 
     const validUrl = validateUrl(url);
     const html = await (await fetch(validUrl)).text();
-    const dom = createWindow(html).document;
+    const dom = domino.createWindow(html).document;
 
     scraper.url = validUrl;
     scraper.root = dom;
@@ -51,8 +51,7 @@ export class Scraper {
   }
 
   async getFavicon() {
-    const linkElement =
-      this.find('link[rel="icon"]') ??
+    const linkElement = this.find('link[rel="icon"]') ??
       this.find('link[rel="shortcut icon"]') ??
       this.find('link[rel="apple-touch-icon"]');
 

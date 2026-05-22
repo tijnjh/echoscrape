@@ -1,0 +1,21 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:domino@^2.1.7": "2.1.7",
+    "npm:hono@^4.12.22": "4.12.22"
+  },
+  "npm": {
+    "domino@2.1.7": {
+      "integrity": "sha512-3rcXhx0ixJV2nj8J0tljzejTF73A35LVVdnTQu79UAqTBFEgYPMgGtykMuu/BDqaOZphATku1ddRUn/RtqUHYQ=="
+    },
+    "hono@4.12.22": {
+      "integrity": "sha512-7fvVPbB92zNRsQke+uiRGwtTuef0tB2Dg4hWxYfFNvkQhIltWoyi0ONReM5LWA+jJWS3nfT5lTq+qbsIpX0IQw=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:domino@^2.1.7",
+      "npm:hono@^4.12.22"
+    ]
+  }
+}
