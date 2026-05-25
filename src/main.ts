@@ -93,7 +93,7 @@ app.get("/text/:path{.+}", async (c) => {
   const url = c.req.param("path");
   const scraper = await Scraper.init(url);
   const text = scraper.find(c.req.query("selector")!)?.textContent;
-  return c.text(text ?? "no element found for selector", 404);
+  return text ? c.text(text) : c.text("no element found for selector", 404);
 });
 
 Deno.serve(app.fetch);
