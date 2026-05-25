@@ -6,4 +6,4 @@ COPY . .
 
 RUN deno cache ./src/main.ts
 
-CMD ["deno", "run", "--allow-all", "./src/main.ts"]
+CMD ["deno", "run", "-A", "./src/main.ts"]
