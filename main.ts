@@ -16,6 +16,7 @@ app.get("/", (c) => {
 
   return c.json({
     name: "echoscrape",
+    deno_version: Deno.version.deno,
     about:
       "minimal api for scraping metadata, favicon, and text from public sites",
     repo: "https://github.com/tijnjh/echoscrape",
