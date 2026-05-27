@@ -22,8 +22,6 @@ export class Scraper {
   private url?: URL;
   private root?: Document;
 
-  private constructor() {}
-
   static async init(url: string) {
     const scraper = new Scraper();
 
