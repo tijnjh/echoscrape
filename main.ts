@@ -1,11 +1,11 @@
-import type { Metadata } from "#lib/types.ts";
+import type { Metadata } from "./lib/types.ts";
 
-import { Scraper } from "#lib/scraper.ts";
-import { undefinedOnEmpty } from "#lib/utils.ts";
+import { Scraper } from "./lib/scraper.ts";
+import { undefinedOnEmpty } from "./lib/utils.ts";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
-import pkg from "../deno.json" with { type: "json" };
+import pkg from "./deno.json" with { type: "json" };
 
 const app = new Hono().use(cors());
 

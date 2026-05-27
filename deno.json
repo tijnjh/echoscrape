@@ -1,12 +1,8 @@
 {
-  "tasks": {
-    "start": "deno run -A ./src/main.ts"
-  },
   "license": "AGPL-3.0",
   "imports": {
     "domino": "npm:domino@^2.1.7",
-    "hono": "npm:hono@^4.12.22",
-    "#lib/": "./src/lib/"
+    "hono": "npm:hono@^4.12.22"
   },
   "compilerOptions": {
     "lib": ["dom", "es2024", "deno.ns"]
