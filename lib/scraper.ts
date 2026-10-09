@@ -1,4 +1,4 @@
-import defer * as domino from "domino";
+import * as domino from "domino";
 
 function validateUrl(rawUrl: string) {
   if (rawUrl.endsWith("/")) {

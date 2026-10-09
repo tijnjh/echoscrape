@@ -1,11 +1,10 @@
 import type { Metadata } from "./lib/types.ts";
-
 import { Scraper } from "./lib/scraper.ts";
 import { undefinedOnEmpty } from "./lib/utils.ts";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-
-import pkg from "./deno.json" with { type: "json" };
+import { serve } from '@hono/node-server'
+import pkg from "./package.json" with { type: "json" };
 
 const app = new Hono().use(cors());
 
@@ -16,7 +15,6 @@ app.get("/", (c) => {
 
   return c.json({
     name: "echoscrape",
-    deno_version: Deno.version.deno,
     about:
       "minimal api for scraping metadata, favicon, and text from public sites",
     repo: "https://github.com/tijnjh/echoscrape",
@@ -97,4 +95,4 @@ app.get("/text/:path{.+}", async (c) => {
   return text ? c.text(text) : c.text("no element found for selector", 404);
 });
 
-Deno.serve(app.fetch);
+serve(app);
